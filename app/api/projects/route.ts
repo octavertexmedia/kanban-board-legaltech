@@ -5,6 +5,9 @@ import { getAuthFromRequest } from '@/lib/api-middleware'
 // GET /api/projects — List projects
 export async function GET(req: NextRequest) {
     try {
+        const auth = await import('@/lib/api-middleware').then(m => m.requireAuth(req as any));
+        if (auth instanceof NextResponse) return auth;
+
         const { searchParams } = new URL(req.url)
         const search = searchParams.get('search')
         const status = searchParams.get('status')
