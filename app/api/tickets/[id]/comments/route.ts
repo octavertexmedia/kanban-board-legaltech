@@ -9,9 +9,10 @@ export async function POST(
     try {
         const { id } = await params
         const auth = getAuthFromRequest(req)
-        const { text } = await req.json()
+        const { text, content } = await req.json()
+        const commentText = (content || text || '').trim()
 
-        if (!text?.trim()) {
+        if (!commentText) {
             return NextResponse.json({ error: 'Comment text is required' }, { status: 400 })
         }
 
@@ -21,14 +22,50 @@ export async function POST(
 
         const comment = await prisma.comment.create({
             data: {
-                text: text.trim(),
+                text: commentText,
                 userId: auth.userId,
                 ticketId: id,
             },
             include: {
-                user: { select: { id: true, name: true, avatar: true } },
+                user: { select: { id: true, name: true, email: true, role: true, avatar: true } },
             },
         })
+
+        const ticket = await prisma.ticket.findUnique({
+            where: { id },
+            include: {
+                assignee: true,
+                column: { include: { board: true } }
+            }
+        })
+
+        if (process.env.PUSHER_APP_ID && ticket?.column?.board?.projectId) {
+            try {
+                const { pusherServer } = await import('@/lib/pusher')
+                await pusherServer.trigger(`project-${ticket.column.board.projectId}`, 'ticket-updated', ticket)
+            } catch (e) { console.error('Pusher error', e) }
+        }
+
+        if (ticket && ticket.assigneeId && ticket.assigneeId !== auth.userId) {
+            // Notify assignee
+            try {
+                const { notificationService } = await import('@/lib/services/notification-service')
+                await notificationService.notify(
+                    ticket.assignee as any,
+                    "ticket_mentioned",
+                    {
+                        ticketId: ticket.id,
+                        projectId: ticket.column?.board?.projectId,
+                        title: ticket.title,
+                        mentionedBy: comment.user,
+                        commentText: comment.text
+                    },
+                    true // send email
+                )
+            } catch (e) {
+                console.error("Failed to send comment notification", e)
+            }
+        }
 
         return NextResponse.json({ comment }, { status: 201 })
     } catch (error: any) {

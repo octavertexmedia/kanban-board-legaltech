@@ -317,7 +317,7 @@ export function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProps) {
                           }`}
                       >
                         {column.tickets.map((ticket, index) => (
-                          <Draggable key={ticket.id} draggableId={ticket.id} index={index}>
+                          <Draggable key={ticket.id} draggableId={ticket.id} index={index} isDragDisabled={!canCreateTicket}>
                             {(provided, snapshot) => (
                               <div
                                 ref={provided.innerRef}

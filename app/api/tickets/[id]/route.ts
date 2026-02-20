@@ -60,17 +60,25 @@ export async function PATCH(
         }
 
         const updateData: any = {}
+        const isManagerOrAdmin = auth?.role === 'ADMIN' || auth?.role === 'MANAGER'
+
+        if (body.assigneeId !== undefined && body.assigneeId !== existing.assigneeId) {
+            if (!isManagerOrAdmin) return NextResponse.json({ error: 'Forbidden: Only managers and admins can assign tickets' }, { status: 403 })
+            updateData.assigneeId = body.assigneeId || null
+        }
+
         if (body.title !== undefined) updateData.title = body.title
         if (body.description !== undefined) updateData.description = body.description
         if (body.type !== undefined) updateData.type = body.type.toUpperCase()
         if (body.priority !== undefined) updateData.priority = body.priority.toUpperCase()
         if (body.dueDate !== undefined) updateData.dueDate = body.dueDate ? new Date(body.dueDate) : null
-        if (body.assigneeId !== undefined) updateData.assigneeId = body.assigneeId || null
         if (body.position !== undefined) updateData.position = body.position
         if (body.timeSpent !== undefined) updateData.timeSpent = body.timeSpent
 
         // Handle column move (drag-and-drop)
         if (body.columnId && body.columnId !== existing.columnId) {
+            if (!isManagerOrAdmin) return NextResponse.json({ error: 'Forbidden: Only managers and admins can change ticket status' }, { status: 403 })
+
             updateData.columnId = body.columnId
 
             // Get max position in target column
@@ -118,6 +126,36 @@ export async function PATCH(
                 await pusherServer.trigger(`project-${ticket.column.board?.projectId}`, 'ticket-updated', ticket)
             } catch (e) { console.error('Pusher error', e) }
         }
+
+        // Trigger Notifications (Email + DB)
+        try {
+            const { notificationService } = await import('@/lib/services/notification-service')
+            const projectData = {
+                title: ticket.title,
+                ticketId: ticket.id,
+                projectId: ticket.column.board?.projectId,
+            }
+
+            // If assigned to a new user
+            if (updateData.assigneeId && updateData.assigneeId !== existing.assigneeId && ticket.assignee) {
+                await notificationService.notify(
+                    ticket.assignee as any,
+                    "ticket_assigned",
+                    { ...projectData, description: ticket.description, priority: ticket.priority, dueDate: ticket.dueDate, assignedBy: { name: 'A Team Member' } },
+                    true
+                )
+            }
+
+            // If status changed
+            if (updateData.columnId && updateData.columnId !== existing.columnId && ticket.assignee) {
+                await notificationService.notify(
+                    ticket.assignee as any,
+                    "ticket_status_change",
+                    { ...projectData, oldStatus: existing.column.title, newStatus: ticket.column.title, changedBy: { name: 'A Team Member' } },
+                    true
+                )
+            }
+        } catch (e) { console.error("Notification failed", e) }
 
         return NextResponse.json({ ticket })
     } catch (error: any) {

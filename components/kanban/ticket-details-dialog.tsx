@@ -94,7 +94,8 @@ export function TicketDetailsDialog({
   const [users, setUsers] = useState<DBUser[]>([])
   const [assigneeId, setAssigneeId] = useState(ticket?.assignee?.id || "")
   const [isUpdatingAssignee, setIsUpdatingAssignee] = useState(false)
-  const { token, user } = useAuth()
+  const { token, user, isAdmin, isManager } = useAuth()
+  const canAssign = isAdmin || isManager
 
   const authHeaders = (): HeadersInit => ({
     "Content-Type": "application/json",
@@ -119,15 +120,13 @@ export function TicketDetailsDialog({
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       })
       const data = await res.json()
-      if (res.ok) {
+      if (res.ok && data.ticket) {
         setComments(data.ticket.comments || [])
         setActivities(data.ticket.activities || [])
+        // Could also load full activity logs here
       }
-    } catch {
-      /* silent */
-    } finally {
-      setIsLoadingComments(false)
-    }
+    } catch (e) { console.error(e) }
+    finally { setIsLoadingComments(false) }
   }
 
   const loadUsers = async () => {
@@ -137,10 +136,8 @@ export function TicketDetailsDialog({
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       })
       const data = await res.json()
-      setUsers(data.users || [])
-    } catch {
-      /* silent */
-    }
+      if (data.users) setUsers(data.users)
+    } catch (e) { console.error(e) }
   }
 
   const handleSubmitComment = async () => {
@@ -150,13 +147,24 @@ export function TicketDetailsDialog({
       const res = await fetch(`/api/tickets/${ticket.id}/comments`, {
         method: "POST",
         headers: authHeaders(),
-        body: JSON.stringify({ text: commentText.trim() }),
+        body: JSON.stringify({ content: commentText.trim() }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || "Failed to post comment")
+      if (!res.ok) throw new Error(data.error)
 
-      setComments(prev => [data.comment, ...prev])
+      setComments([data.comment, ...comments])
       setCommentText("")
+
+      // Update comment count
+      if (onTicketUpdated) {
+        onTicketUpdated({
+          ...ticket,
+          _count: {
+            ...ticket._count,
+            comments: ticket._count.comments + 1
+          }
+        })
+      }
       toast.success("Comment posted!")
     } catch (err: any) {
       toast.error("Failed to post comment", { description: err.message })
@@ -166,7 +174,7 @@ export function TicketDetailsDialog({
   }
 
   const handleAssigneeChange = async (newAssigneeId: string) => {
-    if (!ticket) return
+    if (!ticket || !canAssign) return
     const resolved = newAssigneeId === NONE ? "" : newAssigneeId
     setAssigneeId(resolved)
     setIsUpdatingAssignee(true)
@@ -185,7 +193,7 @@ export function TicketDetailsDialog({
       }
     } catch (err: any) {
       toast.error("Failed to update assignee", { description: err.message })
-      setAssigneeId(ticket.assignee?.id || "")
+      setAssigneeId(ticket.assignee?.id || "") // revert
     } finally {
       setIsUpdatingAssignee(false)
     }
@@ -226,17 +234,17 @@ export function TicketDetailsDialog({
             {ticket.description && (
               <div>
                 <h3 className="text-sm font-semibold text-muted-foreground mb-2">Description</h3>
-                <p className="text-sm leading-relaxed">{ticket.description}</p>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">{ticket.description}</p>
               </div>
             )}
 
             <Separator />
 
             <div className="grid grid-cols-2 gap-4">
-              {/* Assignee — editable */}
+              {/* Assignee — editable if canAssign */}
               <div>
                 <h3 className="text-sm font-semibold text-muted-foreground mb-2">Assignee</h3>
-                <Select value={assigneeId} onValueChange={handleAssigneeChange} disabled={isUpdatingAssignee}>
+                <Select value={assigneeId} onValueChange={handleAssigneeChange} disabled={isUpdatingAssignee || !canAssign}>
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="Unassigned">
                       {(() => {
