@@ -59,10 +59,15 @@ class NotificationService {
     notification: Notification
   ): Promise<void> {
     try {
+      const resend = (await import("@/lib/email/resend-client")).default;
+      const { FROM_EMAIL } = await import("@/lib/email/resend-client");
+      const templates = await import("@/lib/email/templates");
+
+      let emailContent: { subject: string; html: string } | null = null;
+
       switch (type) {
         case "ticket_assigned":
-          await EmailService.sendTicketAssigned({
-            to: user.email,
+          emailContent = templates.ticketAssignedEmail({
             assigneeName: user.name,
             assignerName: data.assignedBy?.name || "Team",
             ticketTitle: data.title,
@@ -76,8 +81,7 @@ class NotificationService {
           break;
 
         case "meeting_scheduled":
-          await EmailService.sendMeetingInvite({
-            to: [user.email],
+          emailContent = templates.meetingInviteEmail({
             attendeeName: user.name,
             organizerName: data.organizer?.name || "Team",
             meetingTitle: data.title,
@@ -91,8 +95,7 @@ class NotificationService {
           break;
 
         case "project_created":
-          await EmailService.sendProjectCreated({
-            to: [user.email],
+          emailContent = templates.projectCreatedEmail({
             memberName: user.name,
             creatorName: data.createdBy?.name || "Team",
             projectName: data.projectName,
@@ -102,8 +105,7 @@ class NotificationService {
           break;
 
         case "ticket_status_change":
-          await EmailService.sendTicketStatusChange({
-            to: user.email,
+          emailContent = templates.ticketStatusChangeEmail({
             recipientName: user.name,
             changerName: data.changedBy?.name || "Team",
             ticketTitle: data.title,
@@ -116,8 +118,17 @@ class NotificationService {
           break;
 
         default:
-          // For types without specific templates, log
-          console.log(`[Email] Notification "${type}" sent to ${user.email}`);
+          console.log(`[Email] Notification "${type}" no template mapped.`);
+      }
+
+      if (emailContent) {
+        await resend.emails.send({
+          from: `Cengineers Kanban <${FROM_EMAIL}>`,
+          to: user.email,
+          subject: emailContent.subject,
+          html: emailContent.html,
+        });
+        console.log(`[Email] Successfully dispatched Resend hook for ${type} to ${user.email}`);
       }
     } catch (error) {
       console.error(`Failed to send email for ${type}:`, error);
