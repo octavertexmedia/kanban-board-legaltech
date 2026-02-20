@@ -79,6 +79,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Project name is required' }, { status: 400 })
         }
 
+        // Ensure creator is not duplicated in memberIds to prevent Unique Constraint Failure
+        const uniqueMemberIds = (Array.from(new Set(memberIds || [])) as string[])
+            .filter((id) => id !== auth?.userId);
+
         const project = await prisma.project.create({
             data: {
                 name,
@@ -86,7 +90,7 @@ export async function POST(req: NextRequest) {
                 members: {
                     create: [
                         ...(auth ? [{ userId: auth.userId, role: 'owner' }] : []),
-                        ...(memberIds || []).map((id: string) => ({ userId: id, role: 'member' })),
+                        ...uniqueMemberIds.map((id: string) => ({ userId: id, role: 'member' })),
                     ],
                 },
                 board: {
