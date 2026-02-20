@@ -2,7 +2,7 @@ import { APP_URL } from './resend-client';
 
 // Shared email wrapper with premium design
 function emailWrapper(content: string, preheader?: string): string {
-    return `
+  return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -64,7 +64,7 @@ function emailWrapper(content: string, preheader?: string): string {
 
 // Primary CTA button
 function ctaButton(label: string, url: string, color: string = '#2962FF'): string {
-    return `
+  return `
     <table cellpadding="0" cellspacing="0" style="margin:24px 0;">
       <tr>
         <td style="background-color:${color};border-radius:8px;padding:12px 28px;">
@@ -76,26 +76,26 @@ function ctaButton(label: string, url: string, color: string = '#2962FF'): strin
 
 // Priority badge
 function priorityBadge(priority: string): string {
-    const colors: Record<string, { bg: string; text: string }> = {
-        high: { bg: '#fef2f2', text: '#dc2626' },
-        medium: { bg: '#fff7ed', text: '#ea580c' },
-        low: { bg: '#f0fdf4', text: '#16a34a' },
-    };
-    const c = colors[priority.toLowerCase()] || colors.medium;
-    return `<span style="display:inline-block;padding:2px 10px;border-radius:12px;background:${c.bg};color:${c.text};font-size:12px;font-weight:600;text-transform:capitalize;">${priority}</span>`;
+  const colors: Record<string, { bg: string; text: string }> = {
+    high: { bg: '#fef2f2', text: '#dc2626' },
+    medium: { bg: '#fff7ed', text: '#ea580c' },
+    low: { bg: '#f0fdf4', text: '#16a34a' },
+  };
+  const c = colors[priority.toLowerCase()] || colors.medium;
+  return `<span style="display:inline-block;padding:2px 10px;border-radius:12px;background:${c.bg};color:${c.text};font-size:12px;font-weight:600;text-transform:capitalize;">${priority}</span>`;
 }
 
 // ====== EMAIL TEMPLATES ======
 
 export function teamInviteEmail(data: {
-    inviteeName: string;
-    inviterName: string;
-    teamName: string;
-    role: string;
+  inviteeName: string;
+  inviterName: string;
+  teamName: string;
+  role: string;
 }): { subject: string; html: string } {
-    return {
-        subject: `🎉 You've been invited to ${data.teamName} on Cengineers Kanban`,
-        html: emailWrapper(`
+  return {
+    subject: `🎉 You've been invited to ${data.teamName} on Cengineers Kanban`,
+    html: emailWrapper(`
       <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#1e293b;">You're Invited! 🎉</h1>
       <p style="color:#64748b;font-size:16px;line-height:1.6;margin:0 0 24px;">
         <strong style="color:#1e293b;">${data.inviterName}</strong> has invited you to join 
@@ -131,23 +131,23 @@ export function teamInviteEmail(data: {
         If you didn't expect this invite, you can safely ignore this email.
       </p>
     `, `${data.inviterName} invited you to ${data.teamName}`)
-    };
+  };
 }
 
 export function ticketAssignedEmail(data: {
-    assigneeName: string;
-    assignerName: string;
-    ticketTitle: string;
-    ticketDescription: string;
-    priority: string;
-    dueDate: string;
-    projectName: string;
-    projectId: string;
-    ticketId: string;
+  assigneeName: string;
+  assignerName: string;
+  ticketTitle: string;
+  ticketDescription: string;
+  priority: string;
+  dueDate: string;
+  projectName: string;
+  projectId: string;
+  ticketId: string;
 }): { subject: string; html: string } {
-    return {
-        subject: `📋 Ticket Assigned: ${data.ticketTitle}`,
-        html: emailWrapper(`
+  return {
+    subject: `📋 Ticket Assigned: ${data.ticketTitle}`,
+    html: emailWrapper(`
       <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#1e293b;">New Ticket Assigned</h1>
       <p style="color:#64748b;font-size:16px;line-height:1.6;margin:0 0 24px;">
         <strong style="color:#1e293b;">${data.assignerName}</strong> assigned a ticket to you in 
@@ -173,23 +173,23 @@ export function ticketAssignedEmail(data: {
 
       ${ctaButton('View Ticket', `${APP_URL}/projects/${data.projectId}?ticket=${data.ticketId}`)}
     `, `New ticket: ${data.ticketTitle}`)
-    };
+  };
 }
 
 export function meetingInviteEmail(data: {
-    attendeeName: string;
-    organizerName: string;
-    meetingTitle: string;
-    meetingDescription: string;
-    date: string;
-    startTime: string;
-    endTime: string;
-    meetLink: string;
-    attendees: string[];
+  attendeeName: string;
+  organizerName: string;
+  meetingTitle: string;
+  meetingDescription: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  meetLink: string;
+  attendees: string[];
 }): { subject: string; html: string } {
-    return {
-        subject: `📅 Meeting: ${data.meetingTitle} — ${data.date}`,
-        html: emailWrapper(`
+  return {
+    subject: `📅 Meeting: ${data.meetingTitle} — ${data.date}`,
+    html: emailWrapper(`
       <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#1e293b;">Meeting Invitation</h1>
       <p style="color:#64748b;font-size:16px;line-height:1.6;margin:0 0 24px;">
         <strong style="color:#1e293b;">${data.organizerName}</strong> invited you to a meeting.
@@ -227,22 +227,22 @@ export function meetingInviteEmail(data: {
         <a href="${APP_URL}/meetings" style="color:#2962FF;text-decoration:none;">View in Calendar →</a>
       </p>
     `, `${data.meetingTitle} on ${data.date}`)
-    };
+  };
 }
 
 export function ticketStatusChangeEmail(data: {
-    recipientName: string;
-    changerName: string;
-    ticketTitle: string;
-    oldStatus: string;
-    newStatus: string;
-    projectName: string;
-    projectId: string;
-    ticketId: string;
+  recipientName: string;
+  changerName: string;
+  ticketTitle: string;
+  oldStatus: string;
+  newStatus: string;
+  projectName: string;
+  projectId: string;
+  ticketId: string;
 }): { subject: string; html: string } {
-    return {
-        subject: `🔄 Ticket Updated: ${data.ticketTitle} → ${data.newStatus}`,
-        html: emailWrapper(`
+  return {
+    subject: `🔄 Ticket Updated: ${data.ticketTitle} → ${data.newStatus}`,
+    html: emailWrapper(`
       <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#1e293b;">Ticket Status Changed</h1>
       <p style="color:#64748b;font-size:16px;line-height:1.6;margin:0 0 24px;">
         <strong style="color:#1e293b;">${data.changerName}</strong> updated a ticket in 
@@ -266,19 +266,19 @@ export function ticketStatusChangeEmail(data: {
 
       ${ctaButton('View Ticket', `${APP_URL}/projects/${data.projectId}?ticket=${data.ticketId}`)}
     `, `${data.ticketTitle} moved to ${data.newStatus}`)
-    };
+  };
 }
 
 export function projectCreatedEmail(data: {
-    memberName: string;
-    creatorName: string;
-    projectName: string;
-    projectDescription: string;
-    projectId: string;
+  memberName: string;
+  creatorName: string;
+  projectName: string;
+  projectDescription: string;
+  projectId: string;
 }): { subject: string; html: string } {
-    return {
-        subject: `🚀 New Project: ${data.projectName}`,
-        html: emailWrapper(`
+  return {
+    subject: `🚀 New Project: ${data.projectName}`,
+    html: emailWrapper(`
       <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#1e293b;">New Project Created</h1>
       <p style="color:#64748b;font-size:16px;line-height:1.6;margin:0 0 24px;">
         <strong style="color:#1e293b;">${data.creatorName}</strong> added you to a new project.
@@ -291,19 +291,19 @@ export function projectCreatedEmail(data: {
 
       ${ctaButton('Open Project', `${APP_URL}/projects/${data.projectId}`, '#16a34a')}
     `, `You've been added to ${data.projectName}`)
-    };
+  };
 }
 
 export function weeklyDigestEmail(data: {
-    userName: string;
-    ticketsCompleted: number;
-    ticketsPending: number;
-    meetingsThisWeek: number;
-    teamUpdates: string[];
+  userName: string;
+  ticketsCompleted: number;
+  ticketsPending: number;
+  meetingsThisWeek: number;
+  teamUpdates: string[];
 }): { subject: string; html: string } {
-    return {
-        subject: `📊 Your Weekly Digest — Cengineers Kanban`,
-        html: emailWrapper(`
+  return {
+    subject: `📊 Your Weekly Digest — Cengineers Kanban`,
+    html: emailWrapper(`
       <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#1e293b;">Weekly Digest 📊</h1>
       <p style="color:#64748b;font-size:16px;line-height:1.6;margin:0 0 24px;">
         Hi <strong style="color:#1e293b;">${data.userName}</strong>, here's your weekly summary.
@@ -341,5 +341,32 @@ export function weeklyDigestEmail(data: {
 
       ${ctaButton('View Dashboard', APP_URL)}
     `, `${data.ticketsCompleted} tickets completed, ${data.ticketsPending} pending`)
-    };
+  };
+}
+
+export function passwordResetEmail(data: {
+  userName: string;
+  resetLink: string;
+}): { subject: string; html: string } {
+  return {
+    subject: `🔒 Reset Your Password — Cengineers Kanban`,
+    html: emailWrapper(`
+      <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#1e293b;">Password Reset Request</h1>
+      <p style="color:#64748b;font-size:16px;line-height:1.6;margin:0 0 24px;">
+        Hi <strong style="color:#1e293b;">${data.userName}</strong>, we received a request to reset your password.
+      </p>
+      
+      <div style="background:#fffbeb;border-radius:12px;padding:24px;margin:0 0 24px;border:1px solid #fde68a;">
+        <h2 style="margin:0 0 8px;font-size:18px;font-weight:600;color:#92400e;">Secure Link Generated</h2>
+        <p style="color:#92400e;font-size:14px;line-height:1.6;margin:0;">This link will expire in 15 minutes. If you did not request a password reset, you can safely ignore this email.</p>
+      </div>
+
+      ${ctaButton('Reset Password', data.resetLink, '#2962FF')}
+
+      <p style="color:#94a3b8;font-size:13px;margin:24px 0 0;">
+        Alternatively, copy to your browser: <br/>
+        <code style="background:#f1f5f9;padding:4px 8px;border-radius:4px;word-break:break-all;color:#475569;">${data.resetLink}</code>
+      </p>
+    `, `Reset your Cengineers Kanban password`)
+  };
 }
