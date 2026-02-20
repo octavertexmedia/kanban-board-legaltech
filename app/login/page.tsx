@@ -24,7 +24,9 @@ import {
   LucideGithub,
   Mail,
   ShieldCheck,
-  AlertCircle
+  AlertCircle,
+  Eye,
+  EyeOff
 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
@@ -32,6 +34,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(true)
   const [error, setError] = useState("")
   const router = useRouter()
@@ -79,7 +82,7 @@ export default function LoginPage() {
     visible: {
       y: 0,
       opacity: 1,
-      transition: { type: "spring", stiffness: 300, damping: 24 }
+      transition: { type: "spring" as const, stiffness: 300, damping: 24 }
     }
   }
 
@@ -89,7 +92,7 @@ export default function LoginPage() {
       scale: 1,
       opacity: 1,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         stiffness: 260,
         damping: 20,
         delay: 0.1
@@ -105,7 +108,7 @@ export default function LoginPage() {
           className="hidden md:flex flex-col space-y-8"
           initial={{ opacity: 0, x: -40 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
+          transition={{ duration: 0.7, ease: "easeOut" as const }}
         >
           <motion.div
             className="flex items-center gap-2.5"
@@ -175,11 +178,10 @@ export default function LoginPage() {
           </motion.div>
         </motion.div>
 
-        {/* Authentication section */}
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
+          transition={{ duration: 0.7, ease: "easeOut" as const }}
           className="md:p-8"
         >
           <Card className="border-none shadow-lg md:border md:shadow-xl">
@@ -257,16 +259,31 @@ export default function LoginPage() {
                           Forgot password?
                         </Link>
                       </div>
-                      <Input
-                        id="password"
-                        placeholder="••••••••"
-                        type="password"
-                        autoComplete="current-password"
-                        disabled={isLoading}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                      />
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          placeholder="••••••••"
+                          type={showPassword ? "text" : "password"}
+                          autoComplete="current-password"
+                          disabled={isLoading}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          className="pr-10"
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                          onClick={() => setShowPassword(!showPassword)}
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                     </div>
 
                     <div className="flex items-center space-x-2 pt-2">
