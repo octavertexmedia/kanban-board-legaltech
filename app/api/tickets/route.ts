@@ -120,6 +120,13 @@ export async function POST(req: NextRequest) {
             })
         }
 
+        if (process.env.PUSHER_APP_ID) {
+            try {
+                const { pusherServer } = await import('@/lib/pusher')
+                await pusherServer.trigger(`project-${ticket.column.board?.projectId}`, 'ticket-created', ticket)
+            } catch (e) { console.error('Pusher error', e) }
+        }
+
         return NextResponse.json({ ticket }, { status: 201 })
     } catch (error: any) {
         console.error('POST /api/tickets error:', error)

@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -16,272 +14,251 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { Ticket, User } from "@/lib/types"
-import { Loader2, Wand2 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { users } from "@/lib/initial-data"
-import { Card } from "@/components/ui/card"
+import { Loader2, UserCheck } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
+import { toast } from "sonner"
+
+interface DBUser {
+  id: string
+  name: string
+  email: string
+  role: string
+  avatar: string | null
+}
 
 interface CreateTicketDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onTicketCreate?: (ticket: Ticket) => void
+  projectId?: string
+  columnId?: string
+  onTicketCreated?: (ticket: any) => void
 }
 
-export function CreateTicketDialog({ open, onOpenChange, onTicketCreate }: CreateTicketDialogProps) {
+export function CreateTicketDialog({
+  open,
+  onOpenChange,
+  projectId,
+  columnId,
+  onTicketCreated,
+}: CreateTicketDialogProps) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
-  const [type, setType] = useState("task")
-  const [priority, setPriority] = useState("medium")
+  const [type, setType] = useState("TASK")
+  const [priority, setPriority] = useState("MEDIUM")
   const [dueDate, setDueDate] = useState("")
-  const [assignee, setAssignee] = useState<User | null>(null)
+  const [assigneeId, setAssigneeId] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [showAiSuggestions, setShowAiSuggestions] = useState(false)
-  const [aiLoading, setAiLoading] = useState(false)
-  const [suggestedUsers, setSuggestedUsers] = useState<User[]>([])
+  const [users, setUsers] = useState<DBUser[]>([])
+  const { token } = useAuth()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Fetch users when dialog opens
+  useEffect(() => {
+    if (open && users.length === 0) {
+      fetch("/api/users", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+        .then(r => r.json())
+        .then(data => setUsers(data.users || []))
+        .catch(() => { })
+    }
+  }, [open, token, users.length])
+
+  const NONE = "__none__"
+
+  const reset = () => {
+    setTitle("")
+    setDescription("")
+    setType("TASK")
+    setPriority("MEDIUM")
+    setDueDate("")
+    setAssigneeId(NONE)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!title.trim()) return
+    // If no columnId, we need one — skip silently
+    if (!columnId) {
+      toast.error("Please open a project board to create a ticket.")
+      return
+    }
     setIsLoading(true)
 
-    // Create a new ticket
-    const newTicket: Ticket = {
-      id: `ticket-${Date.now()}`,
-      title,
-      description,
-      type,
-      priority,
-      dueDate: dueDate || new Date().toISOString().split("T")[0],
-      assignee: assignee || users[0],
-      comments: [],
-      attachments: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
+    try {
+      const res = await fetch("/api/tickets", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim(),
+          type,
+          priority,
+          dueDate: dueDate || undefined,
+          columnId,
+          assigneeId: (assigneeId === NONE || !assigneeId) ? undefined : assigneeId,
+        }),
+      })
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
-      if (onTicketCreate) {
-        onTicketCreate(newTicket)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to create ticket")
+
+      toast.success("Ticket created!", {
+        description: `"${title}" added to To Do`,
+      })
+
+      if (onTicketCreated) {
+        onTicketCreated(data.ticket)
       }
 
-      // Reset form
-      setTitle("")
-      setDescription("")
-      setType("task")
-      setPriority("medium")
-      setDueDate("")
-      setAssignee(null)
-      setShowAiSuggestions(false)
-      setSuggestedUsers([])
-
+      reset()
       onOpenChange(false)
-    }, 1000)
+    } catch (err: any) {
+      toast.error("Failed to create ticket", { description: err.message })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const handleAiSuggest = () => {
-    if (!title || !description) return
-
-    setAiLoading(true)
-    setShowAiSuggestions(true)
-
-    // Simulate AI processing
-    setTimeout(() => {
-      // Mock AI suggestion logic based on ticket content
-      let suggestedUsersList: User[] = []
-
-      const titleLower = title.toLowerCase()
-      const descLower = description.toLowerCase()
-
-      // Simple keyword matching for demo purposes
-      if (
-        titleLower.includes("design") ||
-        descLower.includes("design") ||
-        titleLower.includes("ui") ||
-        descLower.includes("ui") ||
-        titleLower.includes("ux") ||
-        descLower.includes("ux")
-      ) {
-        suggestedUsersList = users.filter((u) => u.role === "designer")
-      } else if (
-        titleLower.includes("research") ||
-        descLower.includes("research") ||
-        titleLower.includes("study") ||
-        descLower.includes("study")
-      ) {
-        suggestedUsersList = users.filter((u) => u.role === "researcher")
-      } else if (
-        titleLower.includes("bug") ||
-        descLower.includes("bug") ||
-        titleLower.includes("fix") ||
-        descLower.includes("fix") ||
-        titleLower.includes("code") ||
-        descLower.includes("code")
-      ) {
-        suggestedUsersList = users.filter((u) => u.role === "engineer")
-      } else {
-        // Default to a mix of users
-        suggestedUsersList = users.slice(0, 3)
-      }
-
-      setSuggestedUsers(suggestedUsersList)
-      setAiLoading(false)
-    }, 1500)
-  }
+  const selectedUser = users.find(u => u.id === assigneeId)
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+    <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v) }}>
+      <DialogContent className="sm:max-w-[580px] max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create New Ticket</DialogTitle>
             <DialogDescription>Fill in the details to create a new ticket for your team.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="title" className="text-right">
-                Title
-              </Label>
+            {/* Title */}
+            <div className="space-y-1.5">
+              <Label htmlFor="ticket-title">Title <span className="text-destructive">*</span></Label>
               <Input
-                id="title"
+                id="ticket-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="col-span-3"
+                placeholder="What needs to be done?"
                 required
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="description" className="text-right">
-                Description
-              </Label>
+
+            {/* Description */}
+            <div className="space-y-1.5">
+              <Label htmlFor="ticket-desc">Description</Label>
               <Textarea
-                id="description"
+                id="ticket-desc"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="col-span-3"
+                placeholder="Add more context..."
                 rows={3}
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="type" className="text-right">
-                Type
-              </Label>
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="bug">Bug</SelectItem>
-                  <SelectItem value="feature">Feature</SelectItem>
-                  <SelectItem value="task">Task</SelectItem>
-                  <SelectItem value="research">Research</SelectItem>
-                </SelectContent>
-              </Select>
+
+            {/* Type & Priority side-by-side */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Type</Label>
+                <Select value={type} onValueChange={setType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="TASK">Task</SelectItem>
+                    <SelectItem value="BUG">Bug</SelectItem>
+                    <SelectItem value="FEATURE">Feature</SelectItem>
+                    <SelectItem value="RESEARCH">Research</SelectItem>
+                    <SelectItem value="LEGAL_REVIEW">Legal Review</SelectItem>
+                    <SelectItem value="CLIENT_INTAKE">Client Intake</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Priority</Label>
+                <Select value={priority} onValueChange={setPriority}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="URGENT">🔴 Urgent</SelectItem>
+                    <SelectItem value="HIGH">🟠 High</SelectItem>
+                    <SelectItem value="MEDIUM">🟡 Medium</SelectItem>
+                    <SelectItem value="LOW">🟢 Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="priority" className="text-right">
-                Priority
-              </Label>
-              <Select value={priority} onValueChange={setPriority}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="dueDate" className="text-right">
-                Due Date
-              </Label>
+
+            {/* Due Date */}
+            <div className="space-y-1.5">
+              <Label htmlFor="ticket-due">Due Date</Label>
               <Input
-                id="dueDate"
+                id="ticket-due"
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="col-span-3"
               />
             </div>
-            <div className="grid grid-cols-4 items-start gap-4">
-              <div className="text-right pt-2">
-                <Label htmlFor="assignee">Assignee</Label>
-              </div>
-              <div className="col-span-3 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {assignee ? (
-                      <>
-                        <Avatar className="h-6 w-6">
-                          <AvatarImage src={assignee.avatar || "/placeholder.svg"} alt={assignee.name} />
-                          <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <span>{assignee.name}</span>
-                      </>
-                    ) : (
-                      <span className="text-muted-foreground">No assignee selected</span>
-                    )}
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="gap-1 text-[#26A69A]"
-                    onClick={handleAiSuggest}
-                    disabled={!title || !description || aiLoading}
-                  >
-                    {aiLoading ? (
-                      <>
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        <span>Analyzing...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="h-3.5 w-3.5" />
-                        <span>Suggest Assignee</span>
-                      </>
-                    )}
-                  </Button>
-                </div>
 
-                {showAiSuggestions && !aiLoading && (
-                  <div className="border rounded-md p-3 bg-muted/50">
-                    <p className="text-sm font-medium mb-2">AI Suggested Assignees:</p>
-                    <div className="space-y-2">
-                      {suggestedUsers.map((user) => (
-                        <Card
-                          key={user.id}
-                          className={`p-2 cursor-pointer hover:bg-muted ${
-                            assignee?.id === user.id ? "border-[#26A69A] bg-[#26A69A]/10" : ""
-                          }`}
-                          onClick={() => setAssignee(user)}
-                        >
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-8 w-8">
-                              <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
-                              <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="text-sm font-medium">{user.name}</p>
-                              <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
-                            </div>
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+            {/* Assignee */}
+            <div className="space-y-1.5">
+              <Label>Assignee</Label>
+              {users.length === 0 ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading team...
+                </div>
+              ) : (
+                <Select value={assigneeId} onValueChange={setAssigneeId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Unassigned">
+                      {selectedUser ? (
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-5 w-5">
+                            <AvatarImage src={selectedUser.avatar || undefined} />
+                            <AvatarFallback className="text-[9px]">{selectedUser.name[0]}</AvatarFallback>
+                          </Avatar>
+                          <span>{selectedUser.name}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <UserCheck className="h-4 w-4" />
+                          <span>Unassigned</span>
+                        </div>
+                      )}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE}>Unassigned</SelectItem>
+                    {users.map(u => (
+                      <SelectItem key={u.id} value={u.id}>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-5 w-5">
+                            <AvatarImage src={u.avatar || undefined} />
+                            <AvatarFallback className="text-[9px]">{u.name[0]}</AvatarFallback>
+                          </Avatar>
+                          <span>{u.name}</span>
+                          <span className="text-xs text-muted-foreground capitalize ml-1">{u.role.toLowerCase()}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
+
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => { reset(); onOpenChange(false) }}>
               Cancel
             </Button>
-            <Button type="submit" className="bg-[#26A69A] hover:bg-[#26A69A]/90" disabled={isLoading}>
+            <Button
+              type="submit"
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+              disabled={isLoading || !title.trim()}
+            >
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

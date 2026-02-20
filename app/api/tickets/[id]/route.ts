@@ -106,11 +106,18 @@ export async function PATCH(
             include: {
                 assignee: { select: { id: true, name: true, email: true, role: true, avatar: true } },
                 creator: { select: { id: true, name: true, avatar: true } },
-                column: { select: { id: true, title: true } },
+                column: { select: { id: true, title: true, board: { select: { projectId: true } } } },
                 labels: { include: { label: true } },
                 _count: { select: { comments: true, attachments: true } },
             },
         })
+
+        if (process.env.PUSHER_APP_ID) {
+            try {
+                const { pusherServer } = await import('@/lib/pusher')
+                await pusherServer.trigger(`project-${ticket.column.board?.projectId}`, 'ticket-updated', ticket)
+            } catch (e) { console.error('Pusher error', e) }
+        }
 
         return NextResponse.json({ ticket })
     } catch (error: any) {

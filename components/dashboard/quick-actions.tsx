@@ -10,14 +10,6 @@ import { useState } from "react"
 
 const actions = [
   {
-    label: "Create Ticket",
-    icon: PanelLeft,
-    gradient: "from-blue-500 to-indigo-500",
-    hoverBg: "hover:bg-blue-50 dark:hover:bg-blue-950/20",
-    hoverText: "hover:text-blue-700 dark:hover:text-blue-300",
-    action: "createTicket",
-  },
-  {
     label: "Schedule Meeting",
     icon: Calendar,
     gradient: "from-violet-500 to-purple-500",
@@ -52,11 +44,9 @@ const actions = [
 ]
 
 export function QuickActions() {
-  const [isCreateTicketOpen, setIsCreateTicketOpen] = useState(false)
   const [isScheduleMeetingOpen, setIsScheduleMeetingOpen] = useState(false)
 
   const handleAction = (action?: string) => {
-    if (action === "createTicket") setIsCreateTicketOpen(true)
     if (action === "scheduleMeeting") setIsScheduleMeetingOpen(true)
   }
 
@@ -106,11 +96,6 @@ export function QuickActions() {
             )
           })}
         </div>
-
-        <CreateTicketDialog
-          open={isCreateTicketOpen}
-          onOpenChange={setIsCreateTicketOpen}
-        />
 
         <ScheduleMeetingDialog
           open={isScheduleMeetingOpen}

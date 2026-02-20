@@ -92,9 +92,10 @@ export async function POST(req: NextRequest) {
                         columns: {
                             create: [
                                 { title: 'To Do', position: 0, color: '#6366f1' },
-                                { title: 'In Progress', position: 1, color: '#f59e0b' },
-                                { title: 'Review', position: 2, color: '#8b5cf6' },
-                                { title: 'Done', position: 3, color: '#10b981' },
+                                { title: 'Backlog', position: 1, color: '#94a3b8' },
+                                { title: 'In Progress', position: 2, color: '#f59e0b' },
+                                { title: 'Review', position: 3, color: '#8b5cf6' },
+                                { title: 'Done', position: 4, color: '#10b981' },
                             ],
                         },
                     },

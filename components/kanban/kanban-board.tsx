@@ -10,9 +10,9 @@ import { Plus, Calendar, MessageSquare, Paperclip, GripVertical } from "lucide-r
 import { CreateTicketDialog } from "./create-ticket-dialog"
 import { TicketDetailsDialog } from "./ticket-details-dialog"
 import { initialBoardData, users } from "@/lib/initial-data"
-import type { Ticket } from "@/lib/types"
 import { notificationService } from "@/lib/services/notification-service"
 import { toast } from "sonner"
+import type { Board, Ticket } from "@/lib/types"
 
 const columnColors: Record<string, { bg: string; border: string; badge: string }> = {
   "To Do": {
@@ -40,7 +40,7 @@ const columnColors: Record<string, { bg: string; border: string; badge: string }
 export function KanbanBoard() {
   const [boardData, setBoardData] = useState(initialBoardData)
   const [isCreateTicketOpen, setIsCreateTicketOpen] = useState(false)
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null)
+  const [selectedTicket, setSelectedTicket] = useState<any | null>(null)
 
   const handleDragEnd = (result: any) => {
     const { destination, source } = result
@@ -202,8 +202,8 @@ export function KanbanBoard() {
                         ref={provided.innerRef}
                         {...provided.droppableProps}
                         className={`rounded-b-xl p-2 min-h-[500px] transition-colors duration-200 ${snapshot.isDraggingOver
-                            ? "bg-primary/5 ring-2 ring-primary/20 ring-inset"
-                            : colors.bg
+                          ? "bg-primary/5 ring-2 ring-primary/20 ring-inset"
+                          : colors.bg
                           }`}
                       >
                         {column.tickets.map((ticket, index) => (
@@ -216,8 +216,8 @@ export function KanbanBoard() {
                                 className="mb-2"
                               >
                                 <Card className={`cursor-pointer transition-all duration-200 border-0 shadow-sm ${snapshot.isDragging
-                                    ? "shadow-xl rotate-2 scale-105"
-                                    : "hover:shadow-md hover:-translate-y-0.5"
+                                  ? "shadow-xl rotate-2 scale-105"
+                                  : "hover:shadow-md hover:-translate-y-0.5"
                                   }`}>
                                   <CardContent className="p-3.5">
                                     <div className="space-y-2.5">
@@ -281,13 +281,12 @@ export function KanbanBoard() {
       <CreateTicketDialog
         open={isCreateTicketOpen}
         onOpenChange={setIsCreateTicketOpen}
-        onTicketCreate={handleAddTicket}
       />
 
       <TicketDetailsDialog
-        ticket={selectedTicket}
+        ticket={selectedTicket as any}
         open={!!selectedTicket}
-        onOpenChange={(open) => {
+        onOpenChange={(open: boolean) => {
           if (!open) setSelectedTicket(null)
         }}
       />

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -13,129 +13,120 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { CalendarDays, Loader2, Video, CheckCircle2, AlertCircle } from "lucide-react"
-import { MultiSelect } from "@/components/ui/multi-select"
-import { users } from "@/lib/initial-data"
-import type { Meeting, User } from "@/lib/types"
-import { EmailService } from "@/lib/email/email-service"
+import { CalendarDays, Loader2, Video, Link2 } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
 import { toast } from "sonner"
+
+interface DBUser {
+  id: string
+  name: string
+  email: string
+  role: string
+  avatar: string | null
+}
 
 interface ScheduleMeetingDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onMeetingSchedule?: (meeting: Meeting) => void
+  onMeetingSchedule?: (meeting: any) => void
 }
 
 export function ScheduleMeetingDialog({
   open,
   onOpenChange,
-  onMeetingSchedule
+  onMeetingSchedule,
 }: ScheduleMeetingDialogProps) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [date, setDate] = useState("")
   const [startTime, setStartTime] = useState("")
   const [endTime, setEndTime] = useState("")
-  const [attendees, setAttendees] = useState<User[]>([])
+  const [meetLink, setMeetLink] = useState("")
+  const [selectedAttendeeIds, setSelectedAttendeeIds] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [users, setUsers] = useState<DBUser[]>([])
+  const { token, user } = useAuth()
 
-  const currentUser = users[0]
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-
-    const startDateTime = new Date(`${date}T${startTime}`).toISOString()
-    const endDateTime = new Date(`${date}T${endTime}`).toISOString()
-
-    const meetLink = `https://meet.google.com/${generateRandomString(3)}-${generateRandomString(4)}-${generateRandomString(3)}`
-
-    const newMeeting: Meeting = {
-      id: `meeting-${Date.now()}`,
-      title,
-      description,
-      startTime: startDateTime,
-      endTime: endDateTime,
-      organizer: currentUser,
-      attendees: [currentUser, ...attendees.filter(a => a.id !== currentUser.id)],
-      meetLink,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-
-    // Send meeting invites via Resend
-    const attendeeEmails = attendees.map(a => a.email)
-    if (attendeeEmails.length > 0) {
-      try {
-        const formattedDate = new Date(`${date}T${startTime}`).toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        })
-        const result = await EmailService.sendMeetingInvite({
-          to: attendeeEmails,
-          attendeeName: "Team",
-          organizerName: currentUser.name,
-          meetingTitle: title,
-          meetingDescription: description,
-          date: formattedDate,
-          startTime,
-          endTime,
-          meetLink,
-          attendees: [currentUser.name, ...attendees.map(a => a.name)],
-        })
-
-        if (result.success) {
-          toast.success("Meeting scheduled!", {
-            description: `Invites sent to ${attendeeEmails.length} attendee${attendeeEmails.length > 1 ? 's' : ''}`,
-            icon: <CheckCircle2 className="h-4 w-4" />,
-          })
-        } else {
-          toast.warning("Meeting created (emails not sent)", {
-            description: "Check your Resend API key",
-            icon: <AlertCircle className="h-4 w-4" />,
-          })
-        }
-      } catch {
-        toast.warning("Meeting created (emails not sent)", {
-          description: "Email delivery failed",
-          icon: <AlertCircle className="h-4 w-4" />,
-        })
-      }
-    } else {
-      toast.success("Meeting scheduled!", {
-        description: "No attendees selected for email invites",
+  useEffect(() => {
+    if (open && users.length === 0) {
+      fetch("/api/users", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       })
+        .then(r => r.json())
+        .then(data => setUsers(data.users || []))
+        .catch(() => { })
     }
+  }, [open, token, users.length])
 
-    if (onMeetingSchedule) {
-      onMeetingSchedule(newMeeting)
-    }
-
-    // Reset form
+  const reset = () => {
     setTitle("")
     setDescription("")
     setDate("")
     setStartTime("")
     setEndTime("")
-    setAttendees([])
-    setIsLoading(false)
-    onOpenChange(false)
+    setMeetLink("")
+    setSelectedAttendeeIds([])
   }
 
-  const generateRandomString = (length: number) => {
-    const chars = 'abcdefghijklmnopqrstuvwxyz'
-    let result = ''
-    for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length))
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title.trim() || !date || !startTime || !endTime) return
+    setIsLoading(true)
+
+    try {
+      const startDateTime = new Date(`${date}T${startTime}`).toISOString()
+      const endDateTime = new Date(`${date}T${endTime}`).toISOString()
+
+      const res = await fetch("/api/meetings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim(),
+          startTime: startDateTime,
+          endTime: endDateTime,
+          meetLink: meetLink.trim() || undefined,
+          attendeeIds: selectedAttendeeIds,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to schedule meeting")
+
+      toast.success("Meeting scheduled!", {
+        description: selectedAttendeeIds.length > 0
+          ? `Inviting ${selectedAttendeeIds.length} attendee(s)`
+          : "Meeting created successfully",
+      })
+
+      if (onMeetingSchedule) {
+        onMeetingSchedule(data.meeting)
+      }
+
+      reset()
+      onOpenChange(false)
+    } catch (err: any) {
+      toast.error("Failed to schedule meeting", { description: err.message })
+    } finally {
+      setIsLoading(false)
     }
-    return result
   }
+
+  const toggleAttendee = (id: string) => {
+    setSelectedAttendeeIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
+  }
+
+  // Filter out current user from attendees list (they are auto-organizer)
+  const filteredUsers = users.filter(u => u.id !== user?.id)
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+    <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v) }}>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -145,35 +136,41 @@ export function ScheduleMeetingDialog({
               Schedule Meeting
             </DialogTitle>
             <DialogDescription>
-              Create a Google Meet meeting and send email invitations to attendees.
+              Create a meeting and invite your team members.
             </DialogDescription>
           </DialogHeader>
+
           <div className="grid gap-4 py-4">
+            {/* Title */}
             <div className="space-y-2">
-              <Label htmlFor="title">Meeting Title</Label>
+              <Label htmlFor="meeting-title">Meeting Title <span className="text-destructive">*</span></Label>
               <Input
-                id="title"
+                id="meeting-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Weekly Team Standup"
                 required
               />
             </div>
+
+            {/* Description */}
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="meeting-desc">Description</Label>
               <Textarea
-                id="description"
+                id="meeting-desc"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Discuss progress on active projects..."
-                rows={3}
+                rows={2}
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            {/* Date & Times */}
+            <div className="grid grid-cols-3 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="date">Date</Label>
+                <Label htmlFor="meeting-date">Date <span className="text-destructive">*</span></Label>
                 <Input
-                  id="date"
+                  id="meeting-date"
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
@@ -181,9 +178,9 @@ export function ScheduleMeetingDialog({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="start-time">Start Time</Label>
+                <Label htmlFor="meeting-start">Start <span className="text-destructive">*</span></Label>
                 <Input
-                  id="start-time"
+                  id="meeting-start"
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
@@ -191,9 +188,9 @@ export function ScheduleMeetingDialog({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="end-time">End Time</Label>
+                <Label htmlFor="meeting-end">End <span className="text-destructive">*</span></Label>
                 <Input
-                  id="end-time"
+                  id="meeting-end"
                   type="time"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
@@ -201,28 +198,63 @@ export function ScheduleMeetingDialog({
                 />
               </div>
             </div>
+
+            {/* Meeting link */}
             <div className="space-y-2">
-              <Label htmlFor="attendees">Invite Attendees (email invites will be sent)</Label>
-              <MultiSelect
-                options={users.map(user => ({
-                  label: user.name,
-                  value: user.id,
-                  user: user
-                }))}
-                placeholder="Select attendees"
-                selected={attendees}
-                onChange={newAttendees => setAttendees(newAttendees)}
+              <Label htmlFor="meet-link">
+                <span className="flex items-center gap-1.5">
+                  <Link2 className="h-3.5 w-3.5" />
+                  Meeting Link (leave blank to auto-generate)
+                </span>
+              </Label>
+              <Input
+                id="meet-link"
+                value={meetLink}
+                onChange={(e) => setMeetLink(e.target.value)}
+                placeholder="https://meet.google.com/xxx-xxxx-xxx"
               />
             </div>
+
+            {/* Attendees */}
+            <div className="space-y-2">
+              <Label>Invite Attendees</Label>
+              {filteredUsers.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Loading team members...</p>
+              ) : (
+                <div className="max-h-44 overflow-y-auto border rounded-md p-2 space-y-1">
+                  {filteredUsers.map(u => (
+                    <label key={u.id} className="flex items-center gap-2.5 cursor-pointer hover:bg-muted rounded-md px-2 py-1.5">
+                      <input
+                        type="checkbox"
+                        checked={selectedAttendeeIds.includes(u.id)}
+                        onChange={() => toggleAttendee(u.id)}
+                        className="rounded"
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{u.name}</p>
+                        <p className="text-xs text-muted-foreground">{u.email}</p>
+                      </div>
+                      <span className="text-xs text-muted-foreground capitalize">{u.role.toLowerCase()}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+              {selectedAttendeeIds.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {selectedAttendeeIds.length} attendee(s) selected
+                </p>
+              )}
+            </div>
           </div>
+
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => { reset(); onOpenChange(false) }}>
               Cancel
             </Button>
             <Button
               type="submit"
               className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-md"
-              disabled={isLoading}
+              disabled={isLoading || !title.trim() || !date || !startTime || !endTime}
             >
               {isLoading ? (
                 <>
@@ -232,7 +264,7 @@ export function ScheduleMeetingDialog({
               ) : (
                 <>
                   <CalendarDays className="mr-2 h-4 w-4" />
-                  Schedule & Send Invites
+                  Schedule Meeting
                 </>
               )}
             </Button>
