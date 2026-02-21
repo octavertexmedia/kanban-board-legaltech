@@ -112,14 +112,13 @@ export async function POST(req: NextRequest) {
             } catch (err: any) {
                 console.error("[Meet] Google Calendar API Error:", err.message)
                 if (err.response?.data) console.error("[Meet] API Response:", JSON.stringify(err.response.data))
+                throw new Error(err.message || 'Failed to generate Google Meet link.')
             }
         }
 
-        // Fallback: Generate a real Jitsi Meet link (free, instant, no auth required)
+        // Ensure a Google Meet link was generated
         if (!finalMeetLink) {
-            const roomId = `cengineers-${title.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-${Date.now().toString(36)}`
-            finalMeetLink = `https://meet.jit.si/${roomId}`
-            console.log('[Meet] Fallback Jitsi Meet link:', finalMeetLink)
+            throw new Error('Failed to generate Google Meet link using the provided Octavertex Media account credentials.');
         }
 
         const meeting = await prisma.meeting.create({
