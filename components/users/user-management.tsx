@@ -38,7 +38,11 @@ export function UserManagement() {
   const [usersList, setUsersList] = useState<DBUser[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  const { token, isAdmin, isManager, isSuperAdmin, user: currentUser } = useAuth()
+  const [viewUserModalData, setViewUserModalData] = useState<string | null>(null)
+  const [roleUserModalData, setRoleUserModalData] = useState<any | null>(null)
+  const [confirmAction, setConfirmAction] = useState<{ user: any; action: "deactivate" | "activate" | "delete" } | null>(null)
+
+  const { token, isAdmin, isManager, isSuperAdmin, user: currentUser, isLoading: isAuthLoading } = useAuth()
   const canSeeTeam = isAdmin || isManager || isSuperAdmin
   const canCreateUsers = isAdmin || isSuperAdmin
 
@@ -55,14 +59,16 @@ export function UserManagement() {
   }
 
   useEffect(() => {
+    if (isAuthLoading) return
+
     if (!canSeeTeam) {
       setIsLoading(false)
       return
     }
     fetchUsers()
-  }, [token, canSeeTeam])
+  }, [token, canSeeTeam, isAuthLoading])
 
-  if (isLoading) {
+  if (isAuthLoading || isLoading) {
     return (
       <div className="flex h-[400px] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -120,10 +126,6 @@ export function UserManagement() {
         return null
     }
   }
-
-  const [viewUserModalData, setViewUserModalData] = useState<string | null>(null)
-  const [roleUserModalData, setRoleUserModalData] = useState<any | null>(null)
-  const [confirmAction, setConfirmAction] = useState<{ user: any; action: "deactivate" | "activate" | "delete" } | null>(null)
 
   const handleStatusAction = (targetUser: any) => {
     if (!isAdmin && !isSuperAdmin) {
