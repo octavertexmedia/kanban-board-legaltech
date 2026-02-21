@@ -40,7 +40,6 @@ export function ScheduleMeetingDialog({
   const [description, setDescription] = useState("")
   const [date, setDate] = useState("")
   const [startTime, setStartTime] = useState("")
-  const [endTime, setEndTime] = useState("")
   const [meetLink, setMeetLink] = useState("")
   const [selectedAttendeeIds, setSelectedAttendeeIds] = useState<string[]>([])
   const [externalEmails, setExternalEmails] = useState("")
@@ -64,7 +63,6 @@ export function ScheduleMeetingDialog({
     setDescription("")
     setDate("")
     setStartTime("")
-    setEndTime("")
     setMeetLink("")
     setSelectedAttendeeIds([])
     setExternalEmails("")
@@ -72,12 +70,13 @@ export function ScheduleMeetingDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!title.trim() || !date || !startTime || !endTime) return
+    if (!title.trim() || !date || !startTime) return
     setIsLoading(true)
 
     try {
-      const startDateTime = new Date(`${date}T${startTime}`).toISOString()
-      const endDateTime = new Date(`${date}T${endTime}`).toISOString()
+      const startDateObj = new Date(`${date}T${startTime}`)
+      const startDateTime = startDateObj.toISOString()
+      const endDateTime = new Date(startDateObj.getTime() + 60 * 60 * 1000).toISOString()
 
       const res = await fetch("/api/meetings", {
         method: "POST",
@@ -113,6 +112,50 @@ export function ScheduleMeetingDialog({
       onOpenChange(false)
     } catch (err: any) {
       toast.error("Failed to schedule meeting", { description: err.message })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleInstantMeeting = async () => {
+    setIsLoading(true)
+    try {
+      const startDateTime = new Date()
+      const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000)
+
+      const res = await fetch("/api/meetings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          title: `Instant Meeting - ${user?.name || 'Team'}`,
+          description: "Instant meeting",
+          startTime: startDateTime.toISOString(),
+          endTime: endDateTime.toISOString(),
+          attendeeIds: selectedAttendeeIds,
+          externalAttendees: externalEmails.split(',').map(e => e.trim()).filter(e => e),
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to create meeting")
+
+      toast.success("Instant Meeting created!", {
+        description: selectedAttendeeIds.length > 0
+          ? `Inviting ${selectedAttendeeIds.length} attendee(s)`
+          : "Meeting created successfully",
+      })
+
+      if (onMeetingSchedule) {
+        onMeetingSchedule(data.meeting)
+      }
+
+      reset()
+      onOpenChange(false)
+    } catch (err: any) {
+      toast.error("Failed to create instant meeting", { description: err.message })
     } finally {
       setIsLoading(false)
     }
@@ -169,7 +212,7 @@ export function ScheduleMeetingDialog({
             </div>
 
             {/* Date & Times */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="meeting-date">Date <span className="text-destructive">*</span></Label>
                 <Input
@@ -187,16 +230,6 @@ export function ScheduleMeetingDialog({
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="meeting-end">End <span className="text-destructive">*</span></Label>
-                <Input
-                  id="meeting-end"
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
                   required
                 />
               </div>
@@ -262,27 +295,30 @@ export function ScheduleMeetingDialog({
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2 mt-4 sm:space-x-0">
             <Button type="button" variant="outline" onClick={() => { reset(); onOpenChange(false) }}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-md"
-              disabled={isLoading || !title.trim() || !date || !startTime || !endTime}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Scheduling...
-                </>
-              ) : (
-                <>
-                  <CalendarDays className="mr-2 h-4 w-4" />
-                  Schedule Meeting
-                </>
-              )}
-            </Button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleInstantMeeting}
+                disabled={isLoading}
+                className="flex-1 sm:flex-none"
+              >
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Video className="mr-2 h-4 w-4" />}
+                Instant Meet
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 sm:flex-none bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-md"
+                disabled={isLoading || !title.trim() || !date || !startTime}
+              >
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CalendarDays className="mr-2 h-4 w-4" />}
+                Schedule
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>
