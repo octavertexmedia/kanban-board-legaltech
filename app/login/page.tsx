@@ -218,21 +218,7 @@ export default function LoginPage() {
                       </Alert>
                     )}
 
-                    {/* Demo credentials hint */}
-                    <div className="mb-4 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/50 p-3">
-                      <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-2">Demo Credentials</p>
-                      <div className="space-y-1 text-xs text-indigo-600 dark:text-indigo-400">
-                        <button type="button" className="block w-full text-left hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded px-2 py-1 transition-colors" onClick={() => { setEmail('admin@cengineers.com'); setPassword('Admin@2026') }}>
-                          <span className="font-medium">Admin:</span> admin@cengineers.com / Admin@2026
-                        </button>
-                        <button type="button" className="block w-full text-left hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded px-2 py-1 transition-colors" onClick={() => { setEmail('john.doe@cengineers.com'); setPassword('Manager@2026') }}>
-                          <span className="font-medium">Manager:</span> john.doe@cengineers.com / Manager@2026
-                        </button>
-                        <button type="button" className="block w-full text-left hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded px-2 py-1 transition-colors" onClick={() => { setEmail('jane.smith@cengineers.com'); setPassword('Engineer@2026') }}>
-                          <span className="font-medium">Engineer:</span> jane.smith@cengineers.com / Engineer@2026
-                        </button>
-                      </div>
-                    </div>
+                    {/* Removed Demo credentials hint */}
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
                       <Input
@@ -252,12 +238,6 @@ export default function LoginPage() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label htmlFor="password">Password</Label>
-                        <Link
-                          href="/forgot-password"
-                          className="text-sm font-medium text-blue-600 hover:underline"
-                        >
-                          Forgot password?
-                        </Link>
                       </div>
                       <div className="relative">
                         <Input
@@ -373,12 +353,7 @@ export default function LoginPage() {
                 .
               </div>
 
-              <div className="text-sm text-center">
-                Don't have an account?{" "}
-                <Link href="/register" className="font-semibold text-blue-600 hover:underline">
-                  Sign up
-                </Link>
-              </div>
+              {/* Removed signup link */}
             </CardFooter>
           </Card>
         </motion.div>

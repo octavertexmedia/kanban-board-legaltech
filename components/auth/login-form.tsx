@@ -47,11 +47,8 @@ export function LoginForm() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Password</Label>
-              <Link href="#" className="text-sm text-[#2962FF] hover:underline">
-                Forgot password?
-              </Link>
+              <Input id="password" type="password" required />
             </div>
-            <Input id="password" type="password" required />
           </div>
           <Button type="submit" className="w-full bg-[#2962FF] hover:bg-[#2962FF]/90" disabled={isLoading}>
             {isLoading ? (
@@ -65,14 +62,7 @@ export function LoginForm() {
           </Button>
         </form>
       </CardContent>
-      <CardFooter className="flex justify-center">
-        <div className="text-sm text-muted-foreground">
-          Don't have an account?{" "}
-          <Link href="/register" className="text-[#2962FF] hover:underline">
-            Sign up
-          </Link>
-        </div>
-      </CardFooter>
+      {/* Removed sign up prompt */}
     </Card>
   )
 }
