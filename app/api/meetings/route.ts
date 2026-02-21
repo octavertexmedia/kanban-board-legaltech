@@ -1,6 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { getAuthFromRequest } from '@/lib/api-middleware'
+import { google } from 'googleapis'
+
+const oauth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+)
+
+if (process.env.GOOGLE_REFRESH_TOKEN) {
+    oauth2Client.setCredentials({
+        refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+    })
+}
+
+const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
 
 // GET /api/meetings
 export async function GET(req: NextRequest) {
@@ -42,7 +57,7 @@ export async function POST(req: NextRequest) {
         const auth = getAuthFromRequest(req)
         const body = await req.json()
 
-        const { title, description, startTime, endTime, meetLink, attendeeIds } = body
+        const { title, description, startTime, endTime, meetLink, attendeeIds, externalAttendees } = body
 
         if (!title || !startTime || !endTime) {
             return NextResponse.json(
@@ -51,13 +66,61 @@ export async function POST(req: NextRequest) {
             )
         }
 
+        let finalMeetLink = meetLink
+
+        // Gather all attendees for Google Calendar invitation
+        let allAttendeeEmails: { email: string }[] = []
+        if (attendeeIds?.length) {
+            const internalUsers = await prisma.user.findMany({
+                where: { id: { in: attendeeIds } },
+                select: { email: true }
+            })
+            allAttendeeEmails = internalUsers.map(u => ({ email: u.email }))
+        }
+        if (externalAttendees?.length) {
+            externalAttendees.forEach((email: string) => {
+                if (email) allAttendeeEmails.push({ email })
+            })
+        }
+
+        if (!finalMeetLink && process.env.GOOGLE_REFRESH_TOKEN) {
+            try {
+                const event = await calendar.events.insert({
+                    calendarId: 'primary',
+                    conferenceDataVersion: 1,
+                    sendUpdates: 'all',
+                    requestBody: {
+                        summary: title,
+                        description: description || '',
+                        start: { dateTime: new Date(startTime).toISOString() },
+                        end: { dateTime: new Date(endTime).toISOString() },
+                        attendees: allAttendeeEmails,
+                        conferenceData: {
+                            createRequest: {
+                                requestId: `meet-${Date.now()}`,
+                                conferenceSolutionKey: { type: 'hangoutsMeet' }
+                            }
+                        }
+                    }
+                })
+
+                finalMeetLink = event.data.hangoutLink || event.data.conferenceData?.entryPoints?.find(e => e.entryPointType === 'video')?.uri;
+            } catch (err: any) {
+                console.error("Google Calendar API Error:", err.message)
+                // Proceed with fallback random link if API fails
+            }
+        }
+
+        finalMeetLink = finalMeetLink || `https://meet.google.com/${Math.random().toString(36).substring(2, 5)}-${Math.random().toString(36).substring(2, 6)}-${Math.random().toString(36).substring(2, 5)}`
+
         const meeting = await prisma.meeting.create({
             data: {
                 title,
                 description: description || '',
                 startTime: new Date(startTime),
                 endTime: new Date(endTime),
-                meetLink: meetLink || `https://meet.google.com/${Math.random().toString(36).substring(2, 5)}-${Math.random().toString(36).substring(2, 6)}-${Math.random().toString(36).substring(2, 5)}`,
+                meetLink: finalMeetLink,
+                externalAttendees: externalAttendees || [],
                 organizerId: auth?.userId || '',
                 attendees: attendeeIds?.length
                     ? { connect: attendeeIds.map((id: string) => ({ id })) }

@@ -204,15 +204,16 @@ enum Priority {
 // ─── Meetings ────────────────────────────────────────────
 
 model Meeting {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  startTime   DateTime
-  endTime     DateTime
-  meetLink    String?
-  organizerId String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  title             String
+  description       String?
+  startTime         DateTime
+  endTime           DateTime
+  meetLink          String?
+  externalAttendees String[]  @default([])
+  organizerId       String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   organizer User   @relation("MeetingOrganizer", fields: [organizerId], references: [id])
   attendees User[] @relation("MeetingAttendees")

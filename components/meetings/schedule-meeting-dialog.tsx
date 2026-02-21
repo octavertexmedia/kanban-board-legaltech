@@ -43,6 +43,7 @@ export function ScheduleMeetingDialog({
   const [endTime, setEndTime] = useState("")
   const [meetLink, setMeetLink] = useState("")
   const [selectedAttendeeIds, setSelectedAttendeeIds] = useState<string[]>([])
+  const [externalEmails, setExternalEmails] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [users, setUsers] = useState<DBUser[]>([])
   const { token, user } = useAuth()
@@ -66,6 +67,7 @@ export function ScheduleMeetingDialog({
     setEndTime("")
     setMeetLink("")
     setSelectedAttendeeIds([])
+    setExternalEmails("")
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -90,6 +92,7 @@ export function ScheduleMeetingDialog({
           endTime: endDateTime,
           meetLink: meetLink.trim() || undefined,
           attendeeIds: selectedAttendeeIds,
+          externalAttendees: externalEmails.split(',').map(e => e.trim()).filter(e => e),
         }),
       })
 
@@ -244,6 +247,18 @@ export function ScheduleMeetingDialog({
                   {selectedAttendeeIds.length} attendee(s) selected
                 </p>
               )}
+            </div>
+
+            {/* External Attendees */}
+            <div className="space-y-2">
+              <Label htmlFor="external-emails">External Attendees (comma-separated emails)</Label>
+              <Textarea
+                id="external-emails"
+                value={externalEmails}
+                onChange={(e) => setExternalEmails(e.target.value)}
+                placeholder="guest1@example.com, guest2@example.com"
+                rows={2}
+              />
             </div>
           </div>
 

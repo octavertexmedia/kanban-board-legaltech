@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
-import { Video, ArrowRight, CalendarDays } from "lucide-react"
+import { Video, ArrowRight, CalendarDays, Copy } from "lucide-react"
 import { isToday, isTomorrow, format } from "date-fns"
 import { useAuth } from "@/lib/auth-context"
+import { toast } from "sonner"
 
 interface DBMeeting {
   id: string
@@ -81,18 +82,31 @@ export function UpcomingMeetings() {
                       </Badge>
                     </div>
                     {meeting.meetLink && (
-                      <a
-                        href={meeting.meetLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="shrink-0"
-                        onClick={e => e.stopPropagation()}
-                      >
-                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 gap-1 cursor-pointer hover:bg-blue-100 text-xs">
-                          <Video className="h-3 w-3" />
-                          Join
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Badge
+                          variant="outline"
+                          className="bg-muted text-muted-foreground border-border gap-1 cursor-pointer hover:bg-muted/80 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            navigator.clipboard.writeText(meeting.meetLink!)
+                            toast.success("Meeting link copied to clipboard")
+                          }}
+                        >
+                          <Copy className="h-3 w-3" />
+                          Copy
                         </Badge>
-                      </a>
+                        <a
+                          href={meeting.meetLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 gap-1 cursor-pointer hover:bg-blue-100 text-xs shadow-sm">
+                            <Video className="h-3 w-3" />
+                            Join
+                          </Badge>
+                        </a>
+                      </div>
                     )}
                   </div>
                   <div className="flex items-center gap-2">

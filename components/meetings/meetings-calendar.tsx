@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
-import { Plus, Video, Users, Calendar as CalendarIcon, Loader2, RefreshCw, ExternalLink } from "lucide-react"
+import { Plus, Video, Users, Calendar as CalendarIcon, Loader2, RefreshCw, ExternalLink, Copy } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -202,19 +202,33 @@ export function MeetingsCalendar() {
 
                       <div className="flex flex-wrap items-center gap-3">
                         {meeting.meetLink && (
-                          <a
-                            href={meeting.meetLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium"
-                            onClick={e => e.stopPropagation()}
-                          >
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 gap-1 cursor-pointer hover:bg-blue-100">
-                              <Video className="h-3 w-3" />
-                              Join Meeting
-                              <ExternalLink className="h-2.5 w-2.5" />
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={meeting.meetLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 gap-1 cursor-pointer hover:bg-blue-100">
+                                <Video className="h-3 w-3" />
+                                Join Meeting
+                                <ExternalLink className="h-2.5 w-2.5" />
+                              </Badge>
+                            </a>
+                            <Badge
+                              variant="outline"
+                              className="bg-muted text-muted-foreground border-border gap-1 cursor-pointer hover:bg-muted/80"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                navigator.clipboard.writeText(meeting.meetLink!)
+                                toast.success("Meeting link copied to clipboard")
+                              }}
+                            >
+                              <Copy className="h-3 w-3" />
+                              Copy Link
                             </Badge>
-                          </a>
+                          </div>
                         )}
 
                         <div className="flex items-center gap-1.5">
