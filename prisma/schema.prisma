@@ -18,6 +18,7 @@ model User {
   role      Role     @default(ENGINEER)
   status    UserStatus @default(ACTIVE)
   avatar    String?
+  preferences String?
   lastActive DateTime @default(now())
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

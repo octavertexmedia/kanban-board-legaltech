@@ -127,35 +127,34 @@ export async function PATCH(
             } catch (e) { console.error('Pusher error', e) }
         }
 
-        // Trigger Notifications (Email + DB)
+        // Create DB notifications for assignee
         try {
-            const { notificationService } = await import('@/lib/services/notification-service')
-            const projectData = {
-                title: ticket.title,
-                ticketId: ticket.id,
-                projectId: ticket.column.board?.projectId,
-            }
-
-            // If assigned to a new user
+            // If assigned to a new user, notify them
             if (updateData.assigneeId && updateData.assigneeId !== existing.assigneeId && ticket.assignee) {
-                await notificationService.notify(
-                    ticket.assignee as any,
-                    "ticket_assigned",
-                    { ...projectData, description: ticket.description, priority: ticket.priority, dueDate: ticket.dueDate, assignedBy: { name: 'A Team Member' } },
-                    true
-                )
+                await prisma.notification.create({
+                    data: {
+                        type: 'ticket_assigned',
+                        title: 'Ticket Assigned to You',
+                        message: `You have been assigned "${ticket.title}"`,
+                        linkTo: `/projects/${ticket.column.board?.projectId}`,
+                        userId: ticket.assignee.id,
+                    }
+                })
             }
 
-            // If status changed
+            // If status/column changed, notify assignee
             if (updateData.columnId && updateData.columnId !== existing.columnId && ticket.assignee) {
-                await notificationService.notify(
-                    ticket.assignee as any,
-                    "ticket_status_change",
-                    { ...projectData, oldStatus: existing.column.title, newStatus: ticket.column.title, changedBy: { name: 'A Team Member' } },
-                    true
-                )
+                await prisma.notification.create({
+                    data: {
+                        type: 'ticket_status_changed',
+                        title: 'Ticket Status Updated',
+                        message: `"${ticket.title}" moved from ${existing.column.title} to ${ticket.column.title}`,
+                        linkTo: `/projects/${ticket.column.board?.projectId}`,
+                        userId: ticket.assignee.id,
+                    }
+                })
             }
-        } catch (e) { console.error("Notification failed", e) }
+        } catch (e) { console.error("Notification creation failed", e) }
 
         return NextResponse.json({ ticket })
     } catch (error: any) {

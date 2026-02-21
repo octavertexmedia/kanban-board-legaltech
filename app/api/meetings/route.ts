@@ -142,6 +142,25 @@ export async function POST(req: NextRequest) {
                     userId: auth.userId,
                 },
             })
+
+            // Create notifications for all attendees
+            if (attendeeIds?.length) {
+                const organizerName = meeting.organizer?.name || 'Someone'
+                const meetingDate = new Date(startTime).toLocaleDateString('en-US', {
+                    weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+                })
+                await prisma.notification.createMany({
+                    data: attendeeIds
+                        .filter((id: string) => id !== auth.userId)
+                        .map((id: string) => ({
+                            type: 'meeting_scheduled',
+                            title: 'New Meeting Invitation',
+                            message: `${organizerName} invited you to "${title}" on ${meetingDate}`,
+                            linkTo: '/meetings',
+                            userId: id,
+                        })),
+                })
+            }
         }
 
         return NextResponse.json({ meeting }, { status: 201 })

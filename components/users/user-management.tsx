@@ -19,6 +19,7 @@ import { useAuth } from "@/lib/auth-context"
 import { InviteUserDialog } from "./invite-user-dialog"
 import { ViewUserDialog } from "./view-user-dialog"
 import { ChangeRoleDialog } from "./change-role-dialog"
+import { ConfirmUserActionDialog } from "./confirm-user-action-dialog"
 import { toast } from "sonner"
 
 interface DBUser {
@@ -120,40 +121,24 @@ export function UserManagement() {
     }
   }
 
-  const handleToggleStatus = async (userId: string, currentStatus: string) => {
+  const [viewUserModalData, setViewUserModalData] = useState<string | null>(null)
+  const [roleUserModalData, setRoleUserModalData] = useState<any | null>(null)
+  const [confirmAction, setConfirmAction] = useState<{ user: any; action: "deactivate" | "activate" | "delete" } | null>(null)
+
+  const handleStatusAction = (targetUser: any) => {
     if (!isAdmin && !isSuperAdmin) {
       toast.error("Only Admins can change user status")
       return
     }
-    // Prevent self-deactivation
-    if (userId === currentUser?.id) {
+    if (targetUser.id === currentUser?.id) {
       toast.error("You cannot deactivate your own account")
       return
     }
-    const newStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
-    try {
-      const res = await fetch(`/api/users/${userId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ status: newStatus }),
-      })
-      if (res.ok) {
-        toast.success(`User ${newStatus === 'ACTIVE' ? 'activated' : 'deactivated'}`)
-        fetchUsers()
-      } else {
-        const data = await res.json()
-        toast.error(data.error || "Failed to update user")
-      }
-    } catch {
-      toast.error("Failed to update user status")
-    }
+    setConfirmAction({
+      user: targetUser,
+      action: targetUser.status === 'ACTIVE' ? 'deactivate' : 'activate',
+    })
   }
-
-  const [viewUserModalData, setViewUserModalData] = useState<string | null>(null)
-  const [roleUserModalData, setRoleUserModalData] = useState<any | null>(null)
 
   return (
     <div className="space-y-6">
@@ -260,7 +245,7 @@ export function UserManagement() {
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className={user.status === 'ACTIVE' ? "text-destructive focus:text-destructive" : "text-green-600"}
-                            onClick={() => handleToggleStatus(user.id, user.status)}
+                            onClick={() => handleStatusAction(user)}
                           >
                             {user.status === 'ACTIVE' ? 'Deactivate user' : 'Activate user'}
                           </DropdownMenuItem>
@@ -295,6 +280,15 @@ export function UserManagement() {
         open={roleUserModalData !== null}
         onOpenChange={(open: boolean) => !open && setRoleUserModalData(null)}
         onRoleChanged={fetchUsers}
+      />
+
+      <ConfirmUserActionDialog
+        user={confirmAction?.user}
+        action={confirmAction?.action || null}
+        open={confirmAction !== null}
+        onOpenChange={(open: boolean) => !open && setConfirmAction(null)}
+        onConfirmed={fetchUsers}
+        allUsers={usersList}
       />
     </div>
   )

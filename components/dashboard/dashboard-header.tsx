@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   Menu, Search, LayoutDashboard,
   FolderKanban, CalendarDays, BookOpen, Users,
-  Settings, Moon, Sun, LogOut, User, Loader2
+  Settings, Moon, Sun, LogOut, User, Loader2, Activity
 } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown"
@@ -28,10 +28,11 @@ import { useAuth } from "@/lib/auth-context"
 export function DashboardHeader() {
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
-  const { user, logout, isAdmin, isManager } = useAuth()
+  const { user, logout, isAdmin, isManager, isSuperAdmin } = useAuth()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
-  const canSeeTeam = isAdmin || isManager
+  const canSeeTeam = isAdmin || isManager || isSuperAdmin
+  const canSeeAudit = isAdmin || isSuperAdmin
 
   const navLinks = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard, show: true },
@@ -39,6 +40,7 @@ export function DashboardHeader() {
     { href: "/meetings", label: "Meetings", icon: CalendarDays, show: true },
     { href: "/knowledge", label: "Knowledge", icon: BookOpen, show: true },
     { href: "/users", label: "Team", icon: Users, show: canSeeTeam },
+    { href: "/audit-log", label: "Audit Log", icon: Activity, show: canSeeAudit },
   ].filter(l => l.show)
 
   const isActive = (href: string) => {
