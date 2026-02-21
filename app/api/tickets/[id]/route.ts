@@ -163,14 +163,38 @@ export async function PATCH(
     }
 }
 
-// DELETE /api/tickets/[id]
+// DELETE /api/tickets/[id] — Only ADMIN/SUPER_ADMIN can delete
 export async function DELETE(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const { id } = await params
+        const auth = getAuthFromRequest(req)
+        if (!auth) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        if (auth.role !== 'ADMIN' && auth.role !== 'SUPER_ADMIN') {
+            return NextResponse.json({ error: 'Forbidden — only Admins can delete tickets' }, { status: 403 })
+        }
+
+        const existing = await prisma.ticket.findUnique({ where: { id }, select: { title: true } })
+        if (!existing) {
+            return NextResponse.json({ error: 'Ticket not found' }, { status: 404 })
+        }
+
         await prisma.ticket.delete({ where: { id } })
+
+        await prisma.activityLog.create({
+            data: {
+                action: 'deleted',
+                entity: 'ticket',
+                entityId: id,
+                details: `Deleted ticket "${existing.title}"`,
+                userId: auth.userId,
+            },
+        })
+
         return NextResponse.json({ success: true })
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 })

@@ -7,6 +7,7 @@ import Link from "next/link"
 import { CreateTicketDialog } from "@/components/kanban/create-ticket-dialog"
 import { ScheduleMeetingDialog } from "@/components/meetings/schedule-meeting-dialog"
 import { useState } from "react"
+import { useAuth } from "@/lib/auth-context"
 
 const actions = [
   {
@@ -45,6 +46,14 @@ const actions = [
 
 export function QuickActions() {
   const [isScheduleMeetingOpen, setIsScheduleMeetingOpen] = useState(false)
+  const { hasPermission, isAdmin, isManager } = useAuth()
+
+  // Filter actions based on role
+  const visibleActions = actions.filter((item) => {
+    if (item.href === "/users" && !isAdmin && !isManager) return false
+    if (item.action === "scheduleMeeting" && !hasPermission('manage_meetings') && !hasPermission('join_meetings')) return false
+    return true
+  })
 
   const handleAction = (action?: string) => {
     if (action === "scheduleMeeting") setIsScheduleMeetingOpen(true)
@@ -60,7 +69,7 @@ export function QuickActions() {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-          {actions.map((item) => {
+          {visibleActions.map((item) => {
             const Icon = item.icon
             const content = (
               <div className="flex flex-col items-center gap-2 py-3">

@@ -14,82 +14,85 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { User } from "@/lib/types"
-import { Loader2, Mail, CheckCircle2, AlertCircle } from "lucide-react"
-import { EmailService } from "@/lib/email/email-service"
+import { Loader2, UserPlus, CheckCircle2, AlertCircle, Eye, EyeOff } from "lucide-react"
 import { toast } from "sonner"
+import { useAuth } from "@/lib/auth-context"
 
 interface InviteUserDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onUserInvite?: (user: User) => void
+  onUserCreated?: () => void
 }
 
-export function InviteUserDialog({ open, onOpenChange, onUserInvite }: InviteUserDialogProps) {
-  const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
+export function InviteUserDialog({ open, onOpenChange, onUserCreated }: InviteUserDialogProps) {
+  const [name, setName] = useState("")
   const [email, setEmail] = useState("")
-  const [role, setRole] = useState("engineer")
+  const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [role, setRole] = useState("ENGINEER")
   const [isLoading, setIsLoading] = useState(false)
+  const { token, isSuperAdmin, isAdmin } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
-    const fullName = `${firstName} ${lastName}`
-
-    // Create a new user object
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      name: fullName,
-      email,
-      role,
-      status: "pending",
-      lastActive: "Just now",
-      avatar: `/placeholder.svg?height=40&width=40`,
-    }
-
     try {
-      // Send invitation email via Resend
-      const result = await EmailService.sendTeamInvite({
-        to: email,
-        inviteeName: fullName,
-        inviterName: "John Doe",
-        teamName: "Cengineers Legal Team",
-        role: role.charAt(0).toUpperCase() + role.slice(1),
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+          role,
+        }),
       })
 
-      if (result.success) {
-        toast.success("Invitation sent!", {
-          description: `An invite email has been sent to ${email}`,
-          icon: <CheckCircle2 className="h-4 w-4" />,
-        })
-      } else {
-        // Still add user locally even if email fails
-        toast.warning("User added (email not sent)", {
-          description: "The team member was added but the invite email could not be sent. Check your Resend API key.",
+      const data = await res.json()
+
+      if (!res.ok) {
+        toast.error("Failed to create user", {
+          description: data.error || "An error occurred",
           icon: <AlertCircle className="h-4 w-4" />,
         })
+        return
       }
-    } catch (error) {
-      toast.warning("User added (email not sent)", {
-        description: "The team member was added but the invite email could not be delivered.",
+
+      toast.success("User created successfully!", {
+        description: `${data.user.name} (${data.user.role}) has been added to the system.`,
+        icon: <CheckCircle2 className="h-4 w-4" />,
+      })
+
+      // Reset form
+      setName("")
+      setEmail("")
+      setPassword("")
+      setRole("ENGINEER")
+      onOpenChange(false)
+      onUserCreated?.()
+    } catch (error: any) {
+      toast.error("Error creating user", {
+        description: error.message,
         icon: <AlertCircle className="h-4 w-4" />,
       })
+    } finally {
+      setIsLoading(false)
     }
+  }
 
-    // Add user to local state regardless
-    if (onUserInvite) {
-      onUserInvite(newUser)
+  // Generate a random secure password
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%'
+    let result = ''
+    for (let i = 0; i < 14; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length))
     }
-
-    // Reset form
-    setFirstName("")
-    setLastName("")
-    setEmail("")
-    setRole("engineer")
-    setIsLoading(false)
-    onOpenChange(false)
+    setPassword(result)
+    setShowPassword(true)
   }
 
   return (
@@ -99,48 +102,63 @@ export function InviteUserDialog({ open, onOpenChange, onUserInvite }: InviteUse
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/30">
-                <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <UserPlus className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
-              Invite Team Member
+              Create New User
             </DialogTitle>
             <DialogDescription>
-              Send an invitation email to add a new member to your team. They'll receive a
-              beautifully designed email with a link to join.
+              Create a new user account with assigned role and credentials.
+              Only Admins can access this panel.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First name</Label>
-                <Input
-                  id="firstName"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="Jane"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last name</Label>
-                <Input
-                  id="lastName"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Smith"
-                  required
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="John Doe"
+                required
+              />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
+              <Label htmlFor="email">Email Address</Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="jane@example.com"
+                placeholder="john@cengineers.com"
                 required
               />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <Button type="button" variant="ghost" size="sm" className="text-xs h-6" onClick={generatePassword}>
+                  Generate
+                </Button>
+              </div>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  minLength={6}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
@@ -149,13 +167,19 @@ export function InviteUserDialog({ open, onOpenChange, onUserInvite }: InviteUse
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="manager">Manager</SelectItem>
-                  <SelectItem value="engineer">Engineer</SelectItem>
-                  <SelectItem value="designer">Designer</SelectItem>
-                  <SelectItem value="researcher">Researcher</SelectItem>
+                  {isSuperAdmin && <SelectItem value="ADMIN">Admin</SelectItem>}
+                  <SelectItem value="MANAGER">Manager</SelectItem>
+                  <SelectItem value="ENGINEER">Engineer</SelectItem>
+                  <SelectItem value="DESIGNER">Designer</SelectItem>
+                  <SelectItem value="RESEARCHER">Researcher</SelectItem>
+                  <SelectItem value="VIEWER">Viewer</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                {isSuperAdmin
+                  ? "As Super Admin, you can create Admin accounts."
+                  : "As Admin, you can create Manager, Engineer, Designer, Researcher, and Viewer accounts."}
+              </p>
             </div>
           </div>
           <DialogFooter>
@@ -170,12 +194,12 @@ export function InviteUserDialog({ open, onOpenChange, onUserInvite }: InviteUse
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending Invite...
+                  Creating...
                 </>
               ) : (
                 <>
-                  <Mail className="mr-2 h-4 w-4" />
-                  Send Invitation
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Create User
                 </>
               )}
             </Button>

@@ -22,19 +22,28 @@ interface AuthContextType {
     hasPermission: (permission: string) => boolean
     isManager: boolean
     isAdmin: boolean
+    isSuperAdmin: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
+    SUPER_ADMIN: [
+        'manage_users', 'manage_projects', 'manage_tickets', 'manage_meetings',
+        'manage_knowledge', 'manage_settings', 'view_analytics', 'delete_anything',
+        'manage_roles', 'export_data', 'create_admins', 'manage_system',
+        'promote_users', 'demote_users', 'manage_global_permissions',
+        'create_users', 'disable_accounts',
+    ],
     ADMIN: [
         'manage_users', 'manage_projects', 'manage_tickets', 'manage_meetings',
         'manage_knowledge', 'manage_settings', 'view_analytics', 'delete_anything',
-        'manage_roles', 'export_data',
+        'manage_roles', 'export_data', 'create_users', 'disable_accounts',
     ],
     MANAGER: [
         'manage_projects', 'manage_tickets', 'manage_meetings', 'manage_knowledge',
-        'view_analytics', 'invite_users', 'assign_tickets', 'export_data',
+        'view_analytics', 'assign_tickets', 'export_data',
+        'create_tickets', 'move_tickets', 'comment_tickets',
     ],
     ENGINEER: [
         'create_tickets', 'update_own_tickets', 'comment_tickets', 'view_projects',
@@ -133,8 +142,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         hasPermission,
-        isManager: user?.role === 'ADMIN' || user?.role === 'MANAGER',
-        isAdmin: user?.role === 'ADMIN',
+        isManager: user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN' || user?.role === 'MANAGER',
+        isAdmin: user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN',
+        isSuperAdmin: user?.role === 'SUPER_ADMIN',
     }
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

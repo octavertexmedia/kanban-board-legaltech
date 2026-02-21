@@ -20,47 +20,6 @@ export interface JWTPayload {
     exp?: number
 }
 
-// ─── Hardcoded Employee Credentials ──────────────────────
-// These are pre-generated credentials for role-based access
-export const EMPLOYEE_CREDENTIALS = [
-    {
-        email: 'admin@cengineers.com',
-        password: 'Admin@2026',
-        name: 'Admin User',
-        role: 'ADMIN' as Role,
-    },
-    {
-        email: 'john.doe@cengineers.com',
-        password: 'Manager@2026',
-        name: 'John Doe',
-        role: 'MANAGER' as Role,
-    },
-    {
-        email: 'jane.smith@cengineers.com',
-        password: 'Engineer@2026',
-        name: 'Jane Smith',
-        role: 'ENGINEER' as Role,
-    },
-    {
-        email: 'alex.johnson@cengineers.com',
-        password: 'Designer@2026',
-        name: 'Alex Johnson',
-        role: 'DESIGNER' as Role,
-    },
-    {
-        email: 'sarah.williams@cengineers.com',
-        password: 'Researcher@2026',
-        name: 'Sarah Williams',
-        role: 'RESEARCHER' as Role,
-    },
-    {
-        email: 'michael.brown@cengineers.com',
-        password: 'Engineer@2026',
-        name: 'Michael Brown',
-        role: 'ENGINEER' as Role,
-    },
-]
-
 // ─── Hash a password ─────────────────────────────────────
 export async function hashPassword(password: string): Promise<string> {
     return bcrypt.hash(password, 12)
@@ -90,16 +49,43 @@ export function verifyToken(token: string): JWTPayload | null {
     }
 }
 
+// ─── Role Hierarchy ──────────────────────────────────────
+// Higher index = higher authority
+export const ROLE_HIERARCHY: Role[] = [
+    'VIEWER',
+    'ENGINEER',
+    'DESIGNER',
+    'RESEARCHER',
+    'MANAGER',
+    'ADMIN',
+    'SUPER_ADMIN',
+]
+
+export function getRoleLevel(role: Role): number {
+    return ROLE_HIERARCHY.indexOf(role)
+}
+
+export function isRoleHigherOrEqual(userRole: Role, requiredRole: Role): boolean {
+    return getRoleLevel(userRole) >= getRoleLevel(requiredRole)
+}
+
 // ─── Role permissions map ────────────────────────────────
 export const ROLE_PERMISSIONS: Record<Role, string[]> = {
+    SUPER_ADMIN: [
+        'manage_users', 'manage_projects', 'manage_tickets', 'manage_meetings',
+        'manage_knowledge', 'manage_settings', 'view_analytics', 'delete_anything',
+        'manage_roles', 'export_data', 'create_admins', 'manage_system',
+        'promote_users', 'demote_users', 'manage_global_permissions',
+    ],
     ADMIN: [
         'manage_users', 'manage_projects', 'manage_tickets', 'manage_meetings',
         'manage_knowledge', 'manage_settings', 'view_analytics', 'delete_anything',
-        'manage_roles', 'export_data',
+        'manage_roles', 'export_data', 'create_users', 'disable_accounts',
     ],
     MANAGER: [
         'manage_projects', 'manage_tickets', 'manage_meetings', 'manage_knowledge',
-        'view_analytics', 'invite_users', 'assign_tickets', 'export_data',
+        'view_analytics', 'assign_tickets', 'export_data',
+        'create_tickets', 'move_tickets', 'comment_tickets',
     ],
     ENGINEER: [
         'create_tickets', 'update_own_tickets', 'comment_tickets', 'view_projects',
@@ -125,5 +111,10 @@ export function hasPermission(role: Role, permission: string): boolean {
 
 // ─── Check if user can manage a resource ─────────────────
 export function canManage(role: Role): boolean {
-    return ['ADMIN', 'MANAGER'].includes(role)
+    return isRoleHigherOrEqual(role, 'MANAGER')
+}
+
+// ─── Check if user is admin or higher ────────────────────
+export function isAdminOrHigher(role: Role): boolean {
+    return isRoleHigherOrEqual(role, 'ADMIN')
 }

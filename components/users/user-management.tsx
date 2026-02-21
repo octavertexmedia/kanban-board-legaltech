@@ -14,9 +14,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { MoreHorizontal, Plus, Search, Loader2 } from "lucide-react"
+import { MoreHorizontal, Plus, Search, Loader2, ShieldCheck, Shield, ShieldAlert } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-// import { InviteUserDialog } from "./invite-user-dialog"
+import { InviteUserDialog } from "./invite-user-dialog"
+import { toast } from "sonner"
 
 interface DBUser {
   id: string
@@ -34,15 +35,11 @@ export function UserManagement() {
   const [usersList, setUsersList] = useState<DBUser[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  const { token, isAdmin, isManager } = useAuth()
-  const canSeeTeam = isAdmin || isManager
+  const { token, isAdmin, isManager, isSuperAdmin, user: currentUser } = useAuth()
+  const canSeeTeam = isAdmin || isManager || isSuperAdmin
+  const canCreateUsers = isAdmin || isSuperAdmin
 
-  useEffect(() => {
-    if (!canSeeTeam) {
-      setIsLoading(false)
-      return
-    }
-
+  const fetchUsers = () => {
     fetch("/api/users", {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
@@ -52,6 +49,14 @@ export function UserManagement() {
       })
       .catch(console.error)
       .finally(() => setIsLoading(false))
+  }
+
+  useEffect(() => {
+    if (!canSeeTeam) {
+      setIsLoading(false)
+      return
+    }
+    fetchUsers()
   }, [token, canSeeTeam])
 
   if (isLoading) {
@@ -65,6 +70,7 @@ export function UserManagement() {
   if (!canSeeTeam) {
     return (
       <div className="flex h-[400px] flex-col items-center justify-center text-center">
+        <ShieldAlert className="h-12 w-12 text-muted-foreground mb-4" />
         <h2 className="text-xl font-bold">Access Denied</h2>
         <p className="text-muted-foreground mt-2 max-w-sm">
           You do not have permission to view the team directory. Please contact your administrator.
@@ -80,29 +86,67 @@ export function UserManagement() {
       user.role.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
-  const handleInviteUser = (newUser: any) => {
-    // We would re-fetch or optimistically update here
-    fetch("/api/users", {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    })
-      .then(r => r.json())
-      .then(data => {
-        if (data.users) setUsersList(data.users)
-      })
-  }
-
   const getRoleBadgeColor = (role: string) => {
-    switch (role?.toLowerCase()) {
-      case "manager":
-        return "bg-purple-100 text-purple-800"
-      case "engineer":
-        return "bg-blue-100 text-blue-800"
-      case "designer":
-        return "bg-pink-100 text-pink-800"
-      case "admin":
-        return "bg-red-100 text-red-800"
+    switch (role?.toUpperCase()) {
+      case "SUPER_ADMIN":
+        return "bg-gradient-to-r from-red-600 to-rose-600 text-white border-0"
+      case "ADMIN":
+        return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+      case "MANAGER":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
+      case "ENGINEER":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+      case "DESIGNER":
+        return "bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-400"
+      case "RESEARCHER":
+        return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+      case "VIEWER":
+        return "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
       default:
         return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const getRoleIcon = (role: string) => {
+    switch (role?.toUpperCase()) {
+      case "SUPER_ADMIN":
+        return <ShieldCheck className="h-3 w-3 mr-1" />
+      case "ADMIN":
+        return <Shield className="h-3 w-3 mr-1" />
+      default:
+        return null
+    }
+  }
+
+  const handleToggleStatus = async (userId: string, currentStatus: string) => {
+    if (!isAdmin && !isSuperAdmin) {
+      toast.error("Only Admins can change user status")
+      return
+    }
+    // Prevent self-deactivation
+    if (userId === currentUser?.id) {
+      toast.error("You cannot deactivate your own account")
+      return
+    }
+    const newStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ status: newStatus }),
+      })
+      if (res.ok) {
+        toast.success(`User ${newStatus === 'ACTIVE' ? 'activated' : 'deactivated'}`)
+        fetchUsers()
+      } else {
+        const data = await res.json()
+        toast.error(data.error || "Failed to update user")
+      }
+    } catch {
+      toast.error("Failed to update user status")
     }
   }
 
@@ -113,10 +157,12 @@ export function UserManagement() {
           <h1 className="text-2xl font-bold tracking-tight">User Management</h1>
           <p className="text-muted-foreground">Manage your team members and their roles</p>
         </div>
-        <Button onClick={() => setIsInviteOpen(true)} className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md">
-          <Plus className="mr-2 h-4 w-4" />
-          Invite User
-        </Button>
+        {canCreateUsers && (
+          <Button onClick={() => setIsInviteOpen(true)} className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md">
+            <Plus className="mr-2 h-4 w-4" />
+            Create User
+          </Button>
+        )}
       </div>
 
       <div className="flex items-center">
@@ -140,13 +186,13 @@ export function UserManagement() {
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Last Active</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
+              {canCreateUsers && <TableHead className="w-[50px]"></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                <TableCell colSpan={canCreateUsers ? 5 : 4} className="text-center py-6 text-muted-foreground">
                   No users found.
                 </TableCell>
               </TableRow>
@@ -168,13 +214,14 @@ export function UserManagement() {
                 </TableCell>
                 <TableCell>
                   <Badge className={getRoleBadgeColor(user.role)} variant="secondary">
-                    {user.role}
+                    {getRoleIcon(user.role)}
+                    {user.role.replace('_', ' ')}
                   </Badge>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <div
-                      className={`h-2 w-2 rounded-full ${user.status === "ACTIVE" ? "bg-green-500" : "bg-gray-300"}`}
+                      className={`h-2 w-2 rounded-full ${user.status === "ACTIVE" ? "bg-green-500" : user.status === "PENDING" ? "bg-yellow-500" : "bg-gray-300"}`}
                     />
                     <span className="capitalize text-sm font-medium">
                       {(user.status || "active").toLowerCase()}
@@ -184,32 +231,48 @@ export function UserManagement() {
                 <TableCell className="text-muted-foreground text-sm">
                   {user.lastActive ? new Date(user.lastActive).toLocaleDateString() : 'Never'}
                 </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Open menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>View profile</DropdownMenuItem>
-                      <DropdownMenuItem>Edit user</DropdownMenuItem>
-                      <DropdownMenuItem>Change role</DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive focus:text-destructive">Deactivate user</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
+                {canCreateUsers && (
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Open menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem>View profile</DropdownMenuItem>
+                        {(isSuperAdmin || (isAdmin && user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN')) && (
+                          <>
+                            <DropdownMenuItem>Change role</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className={user.status === 'ACTIVE' ? "text-destructive focus:text-destructive" : "text-green-600"}
+                              onClick={() => handleToggleStatus(user.id, user.status)}
+                            >
+                              {user.status === 'ACTIVE' ? 'Deactivate user' : 'Activate user'}
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
 
-      {/* <InviteUserDialog open={isInviteOpen} onOpenChange={setIsInviteOpen} onUserInvite={handleInviteUser} /> */}
+      {canCreateUsers && (
+        <InviteUserDialog
+          open={isInviteOpen}
+          onOpenChange={setIsInviteOpen}
+          onUserCreated={fetchUsers}
+        />
+      )}
     </div>
   )
 }

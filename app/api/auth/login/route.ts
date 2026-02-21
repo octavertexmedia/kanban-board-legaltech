@@ -32,6 +32,14 @@ export async function POST(req: NextRequest) {
             )
         }
 
+        // Block inactive/disabled accounts
+        if (user.status === 'INACTIVE') {
+            return NextResponse.json(
+                { error: 'Your account has been deactivated. Contact your administrator.' },
+                { status: 403 }
+            )
+        }
+
         // Update last active
         await prisma.user.update({
             where: { id: user.id },
