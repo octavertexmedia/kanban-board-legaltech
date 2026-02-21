@@ -17,6 +17,8 @@ import { Badge } from "@/components/ui/badge"
 import { MoreHorizontal, Plus, Search, Loader2, ShieldCheck, Shield, ShieldAlert } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { InviteUserDialog } from "./invite-user-dialog"
+import { ViewUserDialog } from "./view-user-dialog"
+import { ChangeRoleDialog } from "./change-role-dialog"
 import { toast } from "sonner"
 
 interface DBUser {
@@ -150,6 +152,9 @@ export function UserManagement() {
     }
   }
 
+  const [viewUserModalData, setViewUserModalData] = useState<string | null>(null)
+  const [roleUserModalData, setRoleUserModalData] = useState<any | null>(null)
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -186,13 +191,13 @@ export function UserManagement() {
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Last Active</TableHead>
-              {canCreateUsers && <TableHead className="w-[50px]"></TableHead>}
+              <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={canCreateUsers ? 5 : 4} className="text-center py-6 text-muted-foreground">
+                <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
                   No users found.
                 </TableCell>
               </TableRow>
@@ -200,14 +205,16 @@ export function UserManagement() {
               <TableRow key={user.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.avatar || undefined} alt={user.name} />
+                    <Avatar className="h-8 w-8 cursor-pointer" onClick={() => setViewUserModalData(user.id)}>
+                      <AvatarImage src={user.avatar || undefined} alt={user.name} className="object-cover" />
                       <AvatarFallback className="text-xs font-bold bg-gradient-to-br from-blue-500 to-indigo-500 text-white">
                         {user.name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <div className="font-medium text-sm">{user.name}</div>
+                      <div className="font-medium text-sm cursor-pointer hover:underline" onClick={() => setViewUserModalData(user.id)}>
+                        {user.name}
+                      </div>
                       <div className="text-xs text-muted-foreground">{user.email}</div>
                     </div>
                   </div>
@@ -231,35 +238,37 @@ export function UserManagement() {
                 <TableCell className="text-muted-foreground text-sm">
                   {user.lastActive ? new Date(user.lastActive).toLocaleDateString() : 'Never'}
                 </TableCell>
-                {canCreateUsers && (
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Open menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem>View profile</DropdownMenuItem>
-                        {(isSuperAdmin || (isAdmin && user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN')) && (
-                          <>
-                            <DropdownMenuItem>Change role</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className={user.status === 'ACTIVE' ? "text-destructive focus:text-destructive" : "text-green-600"}
-                              onClick={() => handleToggleStatus(user.id, user.status)}
-                            >
-                              {user.status === 'ACTIVE' ? 'Deactivate user' : 'Activate user'}
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                )}
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Open menu</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setViewUserModalData(user.id)}>
+                        View profile
+                      </DropdownMenuItem>
+                      {canCreateUsers && (isSuperAdmin || (isAdmin && user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN')) && (
+                        <>
+                          <DropdownMenuItem onClick={() => setRoleUserModalData(user)}>
+                            Change role
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className={user.status === 'ACTIVE' ? "text-destructive focus:text-destructive" : "text-green-600"}
+                            onClick={() => handleToggleStatus(user.id, user.status)}
+                          >
+                            {user.status === 'ACTIVE' ? 'Deactivate user' : 'Activate user'}
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -273,6 +282,20 @@ export function UserManagement() {
           onUserCreated={fetchUsers}
         />
       )}
+
+      <ViewUserDialog
+        userId={viewUserModalData}
+        open={viewUserModalData !== null}
+        onOpenChange={(open: boolean) => !open && setViewUserModalData(null)}
+        onUpdate={fetchUsers}
+      />
+
+      <ChangeRoleDialog
+        user={roleUserModalData}
+        open={roleUserModalData !== null}
+        onOpenChange={(open: boolean) => !open && setRoleUserModalData(null)}
+        onRoleChanged={fetchUsers}
+      />
     </div>
   )
 }
