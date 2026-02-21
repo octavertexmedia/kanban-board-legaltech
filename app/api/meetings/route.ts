@@ -85,6 +85,7 @@ export async function POST(req: NextRequest) {
 
         if (!finalMeetLink && process.env.GOOGLE_REFRESH_TOKEN) {
             try {
+                console.log('[Meet] Attempting Google Calendar API for real Meet link...')
                 const event = await calendar.events.insert({
                     calendarId: 'primary',
                     conferenceDataVersion: 1,
@@ -105,13 +106,21 @@ export async function POST(req: NextRequest) {
                 })
 
                 finalMeetLink = event.data.hangoutLink || event.data.conferenceData?.entryPoints?.find(e => e.entryPointType === 'video')?.uri;
+                if (finalMeetLink) {
+                    console.log('[Meet] Google Meet link generated:', finalMeetLink)
+                }
             } catch (err: any) {
-                console.error("Google Calendar API Error:", err.message)
-                // Proceed with fallback random link if API fails
+                console.error("[Meet] Google Calendar API Error:", err.message)
+                if (err.response?.data) console.error("[Meet] API Response:", JSON.stringify(err.response.data))
             }
         }
 
-        finalMeetLink = finalMeetLink || `https://meet.google.com/${Math.random().toString(36).substring(2, 5)}-${Math.random().toString(36).substring(2, 6)}-${Math.random().toString(36).substring(2, 5)}`
+        // Fallback: Generate a real Jitsi Meet link (free, instant, no auth required)
+        if (!finalMeetLink) {
+            const roomId = `cengineers-${title.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-${Date.now().toString(36)}`
+            finalMeetLink = `https://meet.jit.si/${roomId}`
+            console.log('[Meet] Fallback Jitsi Meet link:', finalMeetLink)
+        }
 
         const meeting = await prisma.meeting.create({
             data: {
