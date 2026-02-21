@@ -129,6 +129,13 @@ export async function PATCH(
 
         // Create DB notifications for assignee
         try {
+            const { notificationService } = await import('@/lib/services/notification-service')
+            const projectData = {
+                title: ticket.title,
+                ticketId: ticket.id,
+                projectId: ticket.column.board?.projectId,
+            }
+
             // If assigned to a new user, notify them
             if (updateData.assigneeId && updateData.assigneeId !== existing.assigneeId && ticket.assignee) {
                 await prisma.notification.create({
@@ -140,6 +147,12 @@ export async function PATCH(
                         userId: ticket.assignee.id,
                     }
                 })
+                await notificationService.notify(
+                    ticket.assignee as any,
+                    "ticket_assigned",
+                    { ...projectData, description: ticket.description, priority: ticket.priority, dueDate: ticket.dueDate, assignedBy: { name: 'A Team Member' } },
+                    true
+                )
             }
 
             // If status/column changed, notify assignee
@@ -153,6 +166,12 @@ export async function PATCH(
                         userId: ticket.assignee.id,
                     }
                 })
+                await notificationService.notify(
+                    ticket.assignee as any,
+                    "ticket_status_change",
+                    { ...projectData, oldStatus: existing.column.title, newStatus: ticket.column.title, changedBy: { name: 'A Team Member' } },
+                    true
+                )
             }
         } catch (e) { console.error("Notification creation failed", e) }
 

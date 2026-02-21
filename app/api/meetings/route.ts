@@ -160,6 +160,31 @@ export async function POST(req: NextRequest) {
                             userId: id,
                         })),
                 })
+
+                // Send Email Invites
+                try {
+                    const { notificationService } = await import('@/lib/services/notification-service')
+                    const attendeesToEmail = meeting.attendees.filter(a => a.id !== auth.userId)
+                    for (const attendee of attendeesToEmail) {
+                        await notificationService.notify(
+                            attendee as any,
+                            "meeting_scheduled",
+                            {
+                                title: meeting.title,
+                                description: meeting.description,
+                                date: meetingDate,
+                                startTime: new Date(meeting.startTime).toLocaleTimeString(),
+                                endTime: new Date(meeting.endTime).toLocaleTimeString(),
+                                meetLink: meeting.meetLink,
+                                organizer: meeting.organizer,
+                                attendees: meeting.attendees
+                            },
+                            true // ensure email is sent
+                        )
+                    }
+                } catch (e) {
+                    console.error("Failed to send meeting emails:", e)
+                }
             }
         }
 
