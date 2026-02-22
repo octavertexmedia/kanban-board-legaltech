@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { DashboardHeader } from "@/components/dashboard/dashboard-header"
+import { PageShell } from "@/components/layout/page-shell"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Card,
@@ -28,8 +28,7 @@ export default function DocsPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <DashboardHeader />
+    <PageShell noPadding>
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 py-12 px-4 md:px-6">
         <div className="max-w-5xl mx-auto text-white">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">Cengineers Kanban API</h1>
@@ -39,7 +38,7 @@ export default function DocsPage() {
         </div>
       </div>
 
-      <main className="flex-1 p-4 md:p-6 pt-6 max-w-7xl mx-auto">
+      <div className="flex-1 p-4 md:p-6 pt-6 max-w-7xl mx-auto">
         <Tabs
           value={activeTab}
           onValueChange={setActiveTab}
@@ -368,7 +367,7 @@ const data = await response.json();
             />
           </TabsContent>
         </Tabs>
-      </main>
-    </div>
+      </div>
+    </PageShell>
   )
 }

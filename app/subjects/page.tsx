@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { DashboardHeader } from "@/components/dashboard/dashboard-header"
+import { PageShell } from "@/components/layout/page-shell"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Plus, Search } from "lucide-react"
@@ -100,101 +100,96 @@ export default function SubjectsPage() {
   const categories = ["all", ...new Set(subjects.map(s => s.category.toLowerCase()))]
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <DashboardHeader />
-      <main className="flex-1 p-4 md:p-6 pt-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Subject Areas</h1>
-              <p className="text-muted-foreground">
-                Browse and manage legal subject areas
-              </p>
-            </div>
-
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Subject
-            </Button>
-          </div>
-
-          <div className="flex items-center mb-6">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search subjects..."
-                className="pl-8"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="mb-6 w-full flex overflow-x-auto pb-px">
-              {categories.map(category => (
-                <TabsTrigger key={category} value={category} className="flex-shrink-0 capitalize">
-                  {category}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
-            {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[1, 2, 3, 4, 5, 6].map(i => (
-                  <Card key={i}>
-                    <CardHeader className="pb-2">
-                      <Skeleton className="h-5 w-1/3 mb-1" />
-                      <Skeleton className="h-4 w-1/4" />
-                    </CardHeader>
-                    <CardContent>
-                      <Skeleton className="h-4 w-full mb-2" />
-                      <Skeleton className="h-4 w-5/6" />
-                    </CardContent>
-                    <CardFooter>
-                      <Skeleton className="h-4 w-1/3" />
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            ) : filteredSubjects.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredSubjects.map(subject => (
-                  <Link key={subject.id} href={`/subjects/${subject.id}`} className="block h-full">
-                    <Card className="h-full transition-shadow hover:shadow-md">
-                      <CardHeader className="pb-2">
-                        <div className="flex justify-between items-start">
-                          <CardTitle className="text-lg">{subject.name}</CardTitle>
-                          <Badge variant="outline">{subject.category}</Badge>
-                        </div>
-                        <CardDescription>
-                          {subject.documentCount} {subject.documentCount === 1 ? 'document' : 'documents'}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-muted-foreground line-clamp-2">{subject.description}</p>
-                      </CardContent>
-                      <CardFooter className="text-sm text-muted-foreground">
-                        Added on {new Date(subject.createdAt).toLocaleDateString()}
-                      </CardFooter>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center p-12">
-                <h3 className="text-lg font-semibold mb-2">No subjects found</h3>
-                <p className="text-muted-foreground">
-                  {searchQuery
-                    ? "Try adjusting your search or filter criteria."
-                    : "Start by adding your first subject area."}
-                </p>
-              </div>
-            )}
-          </Tabs>
+    <PageShell maxWidth="6xl">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Subject Areas</h1>
+          <p className="text-muted-foreground">
+            Browse and manage legal subject areas
+          </p>
         </div>
-      </main>
-    </div>
+
+        <Button>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Subject
+        </Button>
+      </div>
+
+      <div className="flex items-center mb-6">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search subjects..."
+            className="pl-8"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="mb-6 w-full flex overflow-x-auto pb-px">
+          {categories.map(category => (
+            <TabsTrigger key={category} value={category} className="flex-shrink-0 capitalize">
+              {category}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <Card key={i}>
+                <CardHeader className="pb-2">
+                  <Skeleton className="h-5 w-1/3 mb-1" />
+                  <Skeleton className="h-4 w-1/4" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-4 w-full mb-2" />
+                  <Skeleton className="h-4 w-5/6" />
+                </CardContent>
+                <CardFooter>
+                  <Skeleton className="h-4 w-1/3" />
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        ) : filteredSubjects.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredSubjects.map(subject => (
+              <Link key={subject.id} href={`/subjects/${subject.id}`} className="block h-full">
+                <Card className="h-full transition-shadow hover:shadow-md">
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-start">
+                      <CardTitle className="text-lg">{subject.name}</CardTitle>
+                      <Badge variant="outline">{subject.category}</Badge>
+                    </div>
+                    <CardDescription>
+                      {subject.documentCount} {subject.documentCount === 1 ? 'document' : 'documents'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground line-clamp-2">{subject.description}</p>
+                  </CardContent>
+                  <CardFooter className="text-sm text-muted-foreground">
+                    Added on {new Date(subject.createdAt).toLocaleDateString()}
+                  </CardFooter>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center p-12">
+            <h3 className="text-lg font-semibold mb-2">No subjects found</h3>
+            <p className="text-muted-foreground">
+              {searchQuery
+                ? "Try adjusting your search or filter criteria."
+                : "Start by adding your first subject area."}
+            </p>
+          </div>
+        )}
+      </Tabs>
+    </PageShell>
   )
 }

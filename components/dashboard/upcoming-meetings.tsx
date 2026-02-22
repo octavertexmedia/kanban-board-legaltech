@@ -38,11 +38,16 @@ export function UpcomingMeetings() {
   }, [token])
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg font-semibold">Upcoming Meetings</CardTitle>
+    <Card className="border-0 shadow-xl shadow-black/5 ring-1 ring-border/50 bg-card/60 backdrop-blur-xl transition-all duration-300 hover:shadow-2xl">
+      <CardHeader className="flex flex-row items-center justify-between pb-4">
+        <CardTitle className="text-lg font-bold flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center text-violet-500">
+            <CalendarDays className="h-4 w-4" />
+          </div>
+          Upcoming Meetings
+        </CardTitle>
         <Link href="/meetings">
-          <Button variant="ghost" size="sm" className="gap-1">
+          <Button variant="ghost" size="sm" className="gap-1 hover:bg-violet-500/10 hover:text-violet-600 transition-colors">
             <span>View all</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </Button>
@@ -51,14 +56,17 @@ export function UpcomingMeetings() {
       <CardContent>
         {isLoading ? (
           <div className="space-y-3">
-            {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full" />)}
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
           </div>
         ) : meetings.length === 0 ? (
-          <div className="text-center py-6">
-            <CalendarDays className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">No upcoming meetings</p>
+          <div className="text-center py-8">
+            <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl opacity-50">📅</span>
+            </div>
+            <p className="font-medium text-foreground">No upcoming meetings</p>
+            <p className="text-sm text-muted-foreground mt-1 mb-4">Your schedule is clear</p>
             <Link href="/meetings">
-              <Button variant="outline" size="sm" className="mt-2">Schedule Meeting</Button>
+              <Button size="sm" className="bg-violet-600 hover:bg-violet-700 text-white shadow-md shadow-violet-500/20 transition-all">Schedule Meeting</Button>
             </Link>
           </div>
         ) : (
@@ -73,11 +81,12 @@ export function UpcomingMeetings() {
               const endLabel = format(endDate, "h:mm a")
 
               return (
-                <div key={meeting.id} className="flex flex-col gap-2.5 p-3 rounded-lg border hover:border-primary/30 transition-colors">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="space-y-0.5 min-w-0">
-                      <div className="font-medium text-sm truncate">{meeting.title}</div>
-                      <Badge variant="outline" className="bg-violet-50 text-violet-700 border-violet-200 text-xs">
+                <div key={meeting.id} className="group relative bg-card hover:bg-muted/40 border border-border/50 flex flex-col gap-3 p-3.5 rounded-xl transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 overflow-hidden">
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-violet-500 scale-y-0 group-hover:scale-y-100 transition-transform origin-center" />
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1 min-w-0">
+                      <div className="font-semibold text-sm truncate group-hover:text-violet-600 transition-colors">{meeting.title}</div>
+                      <Badge variant="outline" className="bg-violet-500/10 text-violet-600 border-violet-500/20 text-[10px] px-2 py-0 h-5 font-semibold">
                         {dateLabel} · {timeLabel} – {endLabel}
                       </Badge>
                     </div>
@@ -85,7 +94,7 @@ export function UpcomingMeetings() {
                       <div className="flex items-center gap-1.5 shrink-0">
                         <Badge
                           variant="outline"
-                          className="bg-muted text-muted-foreground border-border gap-1 cursor-pointer hover:bg-muted/80 text-xs"
+                          className="bg-muted/50 text-muted-foreground border-border/50 gap-1 cursor-pointer hover:bg-muted text-[10px] shadow-sm transition-colors py-1"
                           onClick={(e) => {
                             e.stopPropagation()
                             navigator.clipboard.writeText(meeting.meetLink!)
@@ -93,7 +102,6 @@ export function UpcomingMeetings() {
                           }}
                         >
                           <Copy className="h-3 w-3" />
-                          Copy
                         </Badge>
                         <a
                           href={meeting.meetLink}
@@ -101,7 +109,7 @@ export function UpcomingMeetings() {
                           rel="noopener noreferrer"
                           onClick={e => e.stopPropagation()}
                         >
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 gap-1 cursor-pointer hover:bg-blue-100 text-xs shadow-sm">
+                          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20 gap-1 cursor-pointer hover:bg-blue-500/20 text-[10px] shadow-sm transition-colors py-1 font-semibold">
                             <Video className="h-3 w-3" />
                             Join
                           </Badge>
@@ -110,19 +118,19 @@ export function UpcomingMeetings() {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="flex -space-x-1.5">
-                      <Avatar className="h-5 w-5 border-2 border-background">
+                    <div className="flex -space-x-2">
+                      <Avatar className="h-6 w-6 border-2 border-background ring-1 ring-border/20 shadow-sm transition-transform group-hover:scale-110">
                         <AvatarImage src={meeting.organizer.avatar || undefined} />
-                        <AvatarFallback className="text-[9px]">{meeting.organizer.name[0]}</AvatarFallback>
+                        <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-[9px] font-bold">{meeting.organizer.name[0]}</AvatarFallback>
                       </Avatar>
                       {meeting.attendees.slice(0, 2).map(a => (
-                        <Avatar key={a.id} className="h-5 w-5 border-2 border-background">
+                        <Avatar key={a.id} className="h-6 w-6 border-2 border-background ring-1 ring-border/20 shadow-sm transition-transform group-hover:scale-110">
                           <AvatarImage src={a.avatar || undefined} />
-                          <AvatarFallback className="text-[9px]">{a.name[0]}</AvatarFallback>
+                          <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-[9px] font-bold">{a.name[0]}</AvatarFallback>
                         </Avatar>
                       ))}
                     </div>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-[11px] font-medium text-muted-foreground ml-1">
                       {meeting.attendees.length + 1} attendee{meeting.attendees.length + 1 !== 1 ? "s" : ""}
                     </span>
                   </div>

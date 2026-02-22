@@ -60,48 +60,48 @@ export function QuickActions() {
   }
 
   return (
-    <Card className="border-0 shadow-sm overflow-hidden">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-amber-500" />
+    <Card className="border-0 shadow-xl shadow-black/5 ring-1 ring-border/50 bg-card/60 backdrop-blur-xl transition-all duration-300">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-lg font-bold flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
+            <Sparkles className="h-4 w-4" />
+          </div>
           Quick Actions
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {visibleActions.map((item) => {
             const Icon = item.icon
             const content = (
-              <div className="flex flex-col items-center gap-2 py-3">
-                <div className={`p-2.5 rounded-xl bg-gradient-to-br ${item.gradient} shadow-sm`}>
-                  <Icon className="h-4.5 w-4.5 text-white" />
+              <div className="flex flex-col items-center gap-3 py-4 w-full">
+                <div className={`p-3.5 rounded-2xl bg-gradient-to-br ${item.gradient} shadow-lg shadow-black/10 text-white transform transition-transform group-hover:scale-110 group-hover:-translate-y-1`}>
+                  <Icon className="h-5 w-5" />
                 </div>
-                <span className="text-xs font-medium">{item.label}</span>
+                <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{item.label}</span>
               </div>
             )
 
             if (item.href) {
               return (
-                <Button
-                  key={item.label}
-                  variant="outline"
-                  className={`h-auto border-dashed ${item.hoverBg} ${item.hoverText} transition-all duration-200`}
-                  asChild
-                >
-                  <Link href={item.href}>{content}</Link>
-                </Button>
+                <Link key={item.label} href={item.href} className="group flex">
+                  <div className={`w-full h-full rounded-2xl border border-border/50 bg-card hover:bg-muted/40 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 relative overflow-hidden`}>
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    {content}
+                  </div>
+                </Link>
               )
             }
 
             return (
-              <Button
+              <button
                 key={item.label}
-                variant="outline"
-                className={`h-auto border-dashed ${item.hoverBg} ${item.hoverText} transition-all duration-200`}
                 onClick={() => handleAction(item.action)}
+                className="group flex w-full h-full rounded-2xl border border-border/50 bg-card hover:bg-muted/40 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 relative overflow-hidden"
               >
+                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 {content}
-              </Button>
+              </button>
             )
           })}
         </div>

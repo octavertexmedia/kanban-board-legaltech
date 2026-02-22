@@ -23,10 +23,18 @@ export async function GET(req: NextRequest) {
         const { searchParams } = new URL(req.url)
         const date = searchParams.get('date')
         const upcoming = searchParams.get('upcoming')
+        const startDate = searchParams.get('startDate')
+        const endDate = searchParams.get('endDate')
 
         const where: any = {}
 
-        if (date) {
+        if (startDate && endDate) {
+            // Range query: fetch meetings between startDate and endDate
+            where.startTime = {
+                gte: new Date(startDate),
+                lt: new Date(new Date(endDate).getTime() + 24 * 60 * 60 * 1000),
+            }
+        } else if (date) {
             const d = new Date(date)
             const start = new Date(d.getFullYear(), d.getMonth(), d.getDate())
             const end = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)
