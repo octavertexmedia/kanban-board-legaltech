@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
@@ -85,10 +86,8 @@ export function DashboardHeader() {
           <div className="flex flex-col h-full">
             <div className="p-5 border-b">
               <Link href="/" className="flex items-center gap-2.5">
-                <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-md">
-                  <span className="text-sm font-bold text-white">CK</span>
-                </div>
-                <span className="font-bold text-lg gradient-text">Cengineers Kanban</span>
+                <Image src="/logo-premium.png" alt="LegalBoard Logo" width={32} height={32} className="rounded-md" />
+                <span className="font-bold text-lg gradient-text">LegalBoard</span>
               </Link>
             </div>
             <nav className="flex-1 p-3 space-y-1">
@@ -128,11 +127,9 @@ export function DashboardHeader() {
 
       {/* Logo */}
       <Link href="/" className="flex items-center gap-2.5 shrink-0">
-        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-sm">
-          <span className="text-xs font-bold text-white">CK</span>
-        </div>
-        <span className="hidden lg:block font-bold text-base">
-          <span className="gradient-text">Cengineers</span>
+        <Image src="/logo-premium.png" alt="LegalBoard Logo" width={36} height={36} className="rounded-md shadow-sm" />
+        <span className="hidden lg:block font-bold text-lg tracking-tight">
+          <span className="gradient-text">LegalBoard</span>
         </span>
       </Link>
 

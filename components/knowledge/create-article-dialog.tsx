@@ -38,28 +38,31 @@ export function CreateArticleDialog({ open, onOpenChange, onArticleCreate }: Cre
   // Current user (for authorship)
   const currentUser = users[0]
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
-    // Create a new article
-    const newArticle: KnowledgeArticle = {
-      id: `article-${Date.now()}`,
-      title,
-      content,
-      category,
-      tags,
-      author: currentUser,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      views: 0,
-    }
+    try {
+      const response = await fetch('/api/articles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          content,
+          category,
+          tags
+        })
+      })
 
-    // Simulate API call
-    setTimeout(() => {
+      if (!response.ok) {
+        throw new Error('Failed to create article')
+      }
+
+      const { article } = await response.json()
+
       setIsLoading(false)
       if (onArticleCreate) {
-        onArticleCreate(newArticle)
+        onArticleCreate(article)
       }
 
       // Reset form
@@ -70,7 +73,10 @@ export function CreateArticleDialog({ open, onOpenChange, onArticleCreate }: Cre
       setTags([])
 
       onOpenChange(false)
-    }, 1000)
+    } catch (error) {
+      console.error(error)
+      setIsLoading(false)
+    }
   }
 
   const handleAddTag = (e: React.KeyboardEvent) => {

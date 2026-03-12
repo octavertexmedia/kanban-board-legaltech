@@ -56,13 +56,16 @@ export default function HomePage() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="mb-8"
       >
-        <div className="relative overflow-hidden rounded-3xl bg-card border border-border/50 shadow-xl shadow-black/5 p-8 md:p-10 isolation-auto">
-          {/* Subtle grid pattern background */}
+        <div className="relative overflow-hidden rounded-3xl border border-border/50 shadow-xl shadow-black/5 p-8 md:p-10 isolation-auto bg-[url('/bg-premium.png')] bg-cover bg-center bg-no-repeat">
+          {/* Dark overlay to ensure text readability */}
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px]" />
+
+          {/* Subtle grid pattern background over the image */}
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
 
           {/* Glowing gradients */}
-          <div className="absolute -top-20 -right-20 w-80 h-80 bg-primary/10 rounded-full blur-[80px] pointer-events-none" />
-          <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-violet-500/10 rounded-full blur-[60px] pointer-events-none" />
+          <div className="absolute -top-20 -right-20 w-80 h-80 bg-primary/20 rounded-full blur-[80px] pointer-events-none" />
+          <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-violet-500/20 rounded-full blur-[60px] pointer-events-none" />
 
           <div className="relative z-10 max-w-4xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary mb-6 shadow-sm">

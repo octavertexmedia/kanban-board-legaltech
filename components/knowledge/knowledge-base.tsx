@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Plus, Search, BookOpen } from "lucide-react"
@@ -13,8 +13,30 @@ import type { KnowledgeArticle } from "@/lib/types"
 export function KnowledgeBase() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [articles, setArticles] = useState(initialKnowledgeArticles)
+  const [articles, setArticles] = useState<KnowledgeArticle[]>(initialKnowledgeArticles)
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+
+
+  useEffect(() => {
+    async function fetchArticles() {
+      try {
+        const response = await fetch('/api/articles')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.articles && data.articles.length > 0) {
+            setArticles(data.articles)
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch articles:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchArticles()
+  }, [])
 
   const handleCreateArticle = (newArticle: KnowledgeArticle) => {
     setArticles([newArticle, ...articles])
