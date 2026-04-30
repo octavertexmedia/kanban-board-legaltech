@@ -16,6 +16,11 @@ export async function middleware(request: NextRequest) {
         return NextResponse.next()
     }
 
+    // Public legal pages (linked from auth and footers).
+    if (pathname.startsWith('/legal')) {
+        return NextResponse.next()
+    }
+
     return neonProtect(request)
 }
 

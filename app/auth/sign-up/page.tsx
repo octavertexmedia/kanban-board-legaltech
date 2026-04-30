@@ -283,6 +283,19 @@ export default function SignUpPage() {
                                 </button>
                             </p>
                         )}
+                        {step === 'register' ? (
+                            <p className="text-center text-xs leading-relaxed sm:text-left">
+                                By signing up, you agree to our{' '}
+                                <Link href="/legal/terms" className="font-medium text-primary underline-offset-4 hover:underline">
+                                    Terms of Service
+                                </Link>{' '}
+                                and{' '}
+                                <Link href="/legal/privacy" className="font-medium text-primary underline-offset-4 hover:underline">
+                                    Privacy Policy
+                                </Link>
+                                .
+                            </p>
+                        ) : null}
                     </CardFooter>
                 </Card>
             </div>
