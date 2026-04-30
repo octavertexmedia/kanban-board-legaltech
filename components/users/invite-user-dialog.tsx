@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { Loader2, UserPlus, CheckCircle2, AlertCircle, Eye, EyeOff } from "lucide-react"
 import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-context"
@@ -30,8 +31,9 @@ export function InviteUserDialog({ open, onOpenChange, onUserCreated }: InviteUs
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [role, setRole] = useState("ENGINEER")
+  const [createAsClient, setCreateAsClient] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const { isAuthenticated, isSuperAdmin, isAdmin } = useAuth()
+  const { isSuperAdmin, isAdmin } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -48,7 +50,9 @@ export function InviteUserDialog({ open, onOpenChange, onUserCreated }: InviteUs
           name: name.trim(),
           email: email.trim().toLowerCase(),
           password,
-          role,
+          ...(createAsClient
+            ? { userKind: "CLIENT" }
+            : { role }),
         }),
       })
 
@@ -62,8 +66,13 @@ export function InviteUserDialog({ open, onOpenChange, onUserCreated }: InviteUs
         return
       }
 
+      const kindLabel =
+        data.user.userKind === "CLIENT"
+          ? "Client portal (Viewer)"
+          : data.user.role.replace("_", " ")
+
       toast.success("User created successfully!", {
-        description: `${data.user.name} (${data.user.role}) has been added to the system.`,
+        description: `${data.user.name} — ${kindLabel}.`,
         icon: <CheckCircle2 className="h-4 w-4" />,
       })
 
@@ -72,6 +81,7 @@ export function InviteUserDialog({ open, onOpenChange, onUserCreated }: InviteUs
       setEmail("")
       setPassword("")
       setRole("ENGINEER")
+      setCreateAsClient(false)
       onOpenChange(false)
       onUserCreated?.()
     } catch (error: any) {
@@ -107,8 +117,8 @@ export function InviteUserDialog({ open, onOpenChange, onUserCreated }: InviteUs
               Create New User
             </DialogTitle>
             <DialogDescription>
-              Create a new user account with assigned role and credentials.
-              Only Admins can access this panel.
+              Create a team member or a client portal user. Neon Auth handles sign-in; roles and portal access
+              are stored in this app.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -160,27 +170,56 @@ export function InviteUserDialog({ open, onOpenChange, onUserCreated }: InviteUs
                 </button>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select value={role} onValueChange={setRole}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {isSuperAdmin && <SelectItem value="ADMIN">Admin</SelectItem>}
-                  <SelectItem value="MANAGER">Manager</SelectItem>
-                  <SelectItem value="ENGINEER">Engineer</SelectItem>
-                  <SelectItem value="DESIGNER">Designer</SelectItem>
-                  <SelectItem value="RESEARCHER">Researcher</SelectItem>
-                  <SelectItem value="VIEWER">Viewer</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                {isSuperAdmin
-                  ? "As Super Admin, you can create Admin accounts."
-                  : "As Admin, you can create Manager, Engineer, Designer, Researcher, and Viewer accounts."}
-              </p>
+            <div className="flex items-center justify-between gap-4 rounded-lg border border-border/60 bg-muted/30 px-3 py-3">
+              <div className="space-y-0.5">
+                <Label htmlFor="client-toggle" className="text-base">
+                  Client portal user
+                </Label>
+                <p className="text-xs text-muted-foreground max-w-[320px]">
+                  Uses the restricted client area after sign-in. App role is always Viewer. Turn off for internal
+                  staff and pick a role below.
+                </p>
+              </div>
+              <Switch
+                id="client-toggle"
+                checked={createAsClient}
+                onCheckedChange={setCreateAsClient}
+                aria-label="Create as client portal user"
+              />
             </div>
+            {!createAsClient && (
+              <div className="space-y-2">
+                <Label htmlFor="role">Role</Label>
+                <Select value={role} onValueChange={setRole}>
+                  <SelectTrigger id="role">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {isSuperAdmin && <SelectItem value="ADMIN">Admin</SelectItem>}
+                    <SelectItem value="MANAGER">Manager</SelectItem>
+                    <SelectItem value="ENGINEER">Engineer</SelectItem>
+                    <SelectItem value="DESIGNER">Designer</SelectItem>
+                    <SelectItem value="RESEARCHER">Researcher</SelectItem>
+                    <SelectItem value="VIEWER">Viewer</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {isSuperAdmin
+                    ? "As Super Admin, you can create Admin accounts."
+                    : isAdmin
+                      ? "As Admin, you can create Manager, Engineer, Designer, Researcher, and Viewer accounts."
+                      : "Select a role for this internal user."}
+                </p>
+              </div>
+            )}
+            {createAsClient && (
+              <p className="text-xs text-amber-700 dark:text-amber-400/90 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+                After creating this user, add them to the right projects with{" "}
+                <strong>client</strong> membership (e.g. in Prisma Studio:{" "}
+                <code className="text-[11px]">ProjectMember.role = CLIENT</code>) so they can see those projects in
+                the portal.
+              </p>
+            )}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
