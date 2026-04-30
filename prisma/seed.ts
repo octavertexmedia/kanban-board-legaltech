@@ -1,3 +1,9 @@
+import { createRequire } from 'node:module'
+
+// Same env resolution as `scripts/prisma-with-env.cjs` (incl. Vercel-pulled Neon `kanban_*` URLs).
+const require = createRequire(import.meta.url)
+require('../scripts/load-database-env.cjs').loadDatabaseEnv()
+
 import {
     PrismaClient,
     Role,

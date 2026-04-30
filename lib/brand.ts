@@ -3,4 +3,4 @@ export const OCTAVERTEX_LOGO_URL =
 
 export const OCTAVERTEX_MARKETING_URL = "https://www.octavertexmedia.com" as const
 
-export const APP_DISPLAY_NAME = "OctaVertex PM" as const
+export const APP_DISPLAY_NAME = "Vertex PM" as const
