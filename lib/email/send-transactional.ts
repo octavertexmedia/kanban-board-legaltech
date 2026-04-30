@@ -1,14 +1,19 @@
 import "server-only"
 
-import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses"
-import { getSesFromSource } from "@/lib/email/mail-config"
+import { Resend } from "resend"
+import { getResendFrom } from "@/lib/email/mail-config"
 
-function getSesClient(): SESClient {
-  const region =
-    process.env.AWS_SES_REGION?.trim() ||
-    process.env.AWS_REGION?.trim() ||
-    "us-east-1"
-  return new SESClient({ region })
+let client: Resend | null = null
+
+function getResend(): Resend {
+  const key = process.env.RESEND_API_KEY?.trim()
+  if (!key) {
+    throw new Error(
+      "RESEND_API_KEY is not set. Add your Resend API key to send transactional email.",
+    )
+  }
+  if (!client) client = new Resend(key)
+  return client
 }
 
 export async function sendTransactionalEmail(params: {
@@ -16,17 +21,15 @@ export async function sendTransactionalEmail(params: {
   subject: string
   html: string
 }): Promise<{ messageId?: string }> {
-  const toAddresses = Array.isArray(params.to) ? params.to : [params.to]
-  const client = getSesClient()
-  const out = await client.send(
-    new SendEmailCommand({
-      Source: getSesFromSource(),
-      Destination: { ToAddresses: toAddresses },
-      Message: {
-        Subject: { Data: params.subject, Charset: "UTF-8" },
-        Body: { Html: { Data: params.html, Charset: "UTF-8" } },
-      },
-    })
-  )
-  return { messageId: out.MessageId }
+  const to = Array.isArray(params.to) ? params.to : [params.to]
+  const { data, error } = await getResend().emails.send({
+    from: getResendFrom(),
+    to,
+    subject: params.subject,
+    html: params.html,
+  })
+  if (error) {
+    throw new Error(error.message)
+  }
+  return { messageId: data?.id }
 }

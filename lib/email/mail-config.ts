@@ -6,17 +6,23 @@ export const APP_URL =
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "") ||
   "https://kanban.vertexcrm.in"
 
-/** Verified SES identity (email must be verified in AWS SES). */
-export const AWS_SES_FROM_EMAIL = process.env.AWS_SES_FROM_EMAIL?.trim() || ""
+/**
+ * Verified sender address in Resend (e.g. notifications@yourdomain.com).
+ * Alternatively set RESEND_FROM to a full RFC string: `Vertex PM <notifications@...>`.
+ */
+export const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL?.trim() || ""
 
 export const MAIL_FROM_DISPLAY_NAME =
   process.env.MAIL_FROM_DISPLAY_NAME?.trim() || APP_DISPLAY_NAME
 
-export function getSesFromSource(): string {
-  if (!AWS_SES_FROM_EMAIL) {
+/** `from` header for Resend (must use a verified domain or Resend onboarding address). */
+export function getResendFrom(): string {
+  const full = process.env.RESEND_FROM?.trim()
+  if (full) return full
+  if (!RESEND_FROM_EMAIL) {
     throw new Error(
-      "AWS_SES_FROM_EMAIL is not set. Add a verified sender email from AWS SES."
+      'Set RESEND_FROM (e.g. "Vertex PM <mail@yourdomain.com>") or RESEND_FROM_EMAIL for Resend.',
     )
   }
-  return `${MAIL_FROM_DISPLAY_NAME} <${AWS_SES_FROM_EMAIL}>`
+  return `${MAIL_FROM_DISPLAY_NAME} <${RESEND_FROM_EMAIL}>`
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -8,7 +8,7 @@ import {
   CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import {
@@ -22,25 +22,136 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Switch } from "@/components/ui/switch"
 import { Loader2 } from "lucide-react"
 import { useTheme } from "next-themes"
+import { useAuth } from "@/lib/auth-context"
+import { toast } from "sonner"
+import {
+  applyAppearanceToDocument,
+  type AppearancePreferences,
+} from "@/lib/user-preferences"
 
 export function AppearanceSettings() {
-  const { theme, setTheme } = useTheme()
-  const [fontSize, setFontSize] = useState("default")
-  const [colorScheme, setColorScheme] = useState(theme || "system")
+  const { setTheme } = useTheme()
+  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const [isLoading, setIsLoading] = useState(false)
+  const [isFetching, setIsFetching] = useState(true)
+  const [colorScheme, setColorScheme] = useState<"light" | "dark" | "system">("system")
+  const [fontSize, setFontSize] = useState<"small" | "default" | "large">("default")
   const [animationsEnabled, setAnimationsEnabled] = useState(true)
   const [denseMode, setDenseMode] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [reducedMotion, setReducedMotion] = useState(false)
+  const [highContrast, setHighContrast] = useState(false)
 
-  const handleSave = () => {
+  const load = useCallback(async () => {
+    setIsFetching(true)
+    try {
+      const res = await fetch("/api/user/preferences", { credentials: "include" })
+      if (!res.ok) return
+      const data = await res.json()
+      const a = (data.appearance ?? {}) as AppearancePreferences
+      if (a.theme && ["light", "dark", "system"].includes(a.theme)) {
+        setColorScheme(a.theme)
+      }
+      if (a.fontSize) setFontSize(a.fontSize)
+      if (typeof a.animationsEnabled === "boolean") setAnimationsEnabled(a.animationsEnabled)
+      if (typeof a.denseMode === "boolean") setDenseMode(a.denseMode)
+      if (typeof a.reducedMotion === "boolean") setReducedMotion(a.reducedMotion)
+      if (typeof a.highContrast === "boolean") setHighContrast(a.highContrast)
+
+      applyAppearanceToDocument(a)
+    } catch {
+      toast.error("Could not load appearance preferences")
+    } finally {
+      setIsFetching(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) void load()
+    else if (!authLoading && !isAuthenticated) setIsFetching(false)
+  }, [authLoading, isAuthenticated, load])
+
+  const handleSave = async () => {
     setIsLoading(true)
+    try {
+      const appearance: AppearancePreferences = {
+        theme: colorScheme,
+        fontSize,
+        animationsEnabled,
+        denseMode,
+        reducedMotion,
+        highContrast,
+      }
+      const res = await fetch("/api/user/preferences", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ appearance }),
+      })
+      if (!res.ok) throw new Error("Save failed")
 
-    // Apply the theme change
-    setTheme(colorScheme)
-
-    // Simulate API call
-    setTimeout(() => {
+      setTheme(colorScheme)
+      applyAppearanceToDocument(appearance)
+      toast.success("Appearance saved")
+    } catch {
+      toast.error("Failed to save appearance")
+    } finally {
       setIsLoading(false)
-    }, 1000)
+    }
+  }
+
+  const handleReset = async () => {
+    setColorScheme("system")
+    setFontSize("default")
+    setAnimationsEnabled(true)
+    setDenseMode(false)
+    setReducedMotion(false)
+    setHighContrast(false)
+    setTheme("system")
+    applyAppearanceToDocument({
+      theme: "system",
+      fontSize: "default",
+      animationsEnabled: true,
+      denseMode: false,
+      reducedMotion: false,
+      highContrast: false,
+    })
+    try {
+      await fetch("/api/user/preferences", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          appearance: {
+            theme: "system",
+            fontSize: "default",
+            animationsEnabled: true,
+            denseMode: false,
+            reducedMotion: false,
+            highContrast: false,
+          },
+        }),
+      })
+      toast.info("Appearance reset to defaults")
+    } catch {
+      toast.error("Reset failed to sync to server")
+    }
+  }
+
+  if (authLoading || isFetching) {
+    return (
+      <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
+        <Loader2 className="h-5 w-5 animate-spin" />
+        Loading appearance…
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <p className="text-sm text-muted-foreground py-8">
+        Sign in to customize appearance.
+      </p>
+    )
   }
 
   return (
@@ -49,7 +160,7 @@ export function AppearanceSettings() {
         <CardHeader>
           <CardTitle>Appearance</CardTitle>
           <CardDescription>
-            Customize the appearance of the application
+            Theme and layout preferences are saved to your account and applied when you sign in.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -57,19 +168,17 @@ export function AppearanceSettings() {
             <div>
               <Label className="text-base">Theme</Label>
               <p className="text-sm text-muted-foreground mb-4">
-                Select the theme for the dashboard
+                Choose light, dark, or match the system.
               </p>
               <RadioGroup
                 value={colorScheme}
-                onValueChange={setColorScheme}
+                onValueChange={(v) =>
+                  setColorScheme(v as "light" | "dark" | "system")
+                }
                 className="grid grid-cols-3 gap-4"
               >
                 <div>
-                  <RadioGroupItem
-                    value="light"
-                    id="light"
-                    className="sr-only"
-                  />
+                  <RadioGroupItem value="light" id="light" className="sr-only" />
                   <Label
                     htmlFor="light"
                     className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
@@ -80,11 +189,7 @@ export function AppearanceSettings() {
                 </div>
 
                 <div>
-                  <RadioGroupItem
-                    value="dark"
-                    id="dark"
-                    className="sr-only"
-                  />
+                  <RadioGroupItem value="dark" id="dark" className="sr-only" />
                   <Label
                     htmlFor="dark"
                     className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
@@ -95,11 +200,7 @@ export function AppearanceSettings() {
                 </div>
 
                 <div>
-                  <RadioGroupItem
-                    value="system"
-                    id="system"
-                    className="sr-only"
-                  />
+                  <RadioGroupItem value="system" id="system" className="sr-only" />
                   <Label
                     htmlFor="system"
                     className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
@@ -112,8 +213,13 @@ export function AppearanceSettings() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="font-size">Font Size</Label>
-              <Select value={fontSize} onValueChange={setFontSize}>
+              <Label htmlFor="font-size">Font size</Label>
+              <Select
+                value={fontSize}
+                onValueChange={(v) =>
+                  setFontSize(v as "small" | "default" | "large")
+                }
+              >
                 <SelectTrigger id="font-size">
                   <SelectValue placeholder="Select font size" />
                 </SelectTrigger>
@@ -128,9 +234,9 @@ export function AppearanceSettings() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label className="text-base">Motion & Animations</Label>
+                  <Label className="text-base">Motion and animations</Label>
                   <p className="text-sm text-muted-foreground">
-                    Enable motion and animations
+                    Turn off to minimize movement across the UI (stored as a preference).
                   </p>
                 </div>
                 <Switch
@@ -141,39 +247,28 @@ export function AppearanceSettings() {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label className="text-base">Dense Mode</Label>
+                  <Label className="text-base">Dense layout</Label>
                   <p className="text-sm text-muted-foreground">
-                    Reduce spacing to fit more content on screen
+                    Tighter spacing and slightly smaller radii where supported.
                   </p>
                 </div>
-                <Switch
-                  checked={denseMode}
-                  onCheckedChange={setDenseMode}
-                />
+                <Switch checked={denseMode} onCheckedChange={setDenseMode} />
               </div>
             </div>
           </div>
         </CardContent>
         <CardFooter className="flex justify-end gap-2">
-          <Button
-            variant="outline"
-            onClick={() => {
-              setColorScheme(theme || "system")
-              setFontSize("default")
-              setAnimationsEnabled(true)
-              setDenseMode(false)
-            }}
-          >
+          <Button variant="outline" type="button" onClick={handleReset}>
             Reset
           </Button>
-          <Button onClick={handleSave} disabled={isLoading}>
+          <Button type="button" onClick={handleSave} disabled={isLoading}>
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Saving...
               </>
             ) : (
-              "Save Changes"
+              "Save changes"
             )}
           </Button>
         </CardFooter>
@@ -183,30 +278,35 @@ export function AppearanceSettings() {
         <CardHeader>
           <CardTitle>Accessibility</CardTitle>
           <CardDescription>
-            Configure accessibility settings
+            These options are saved with your account and applied on every visit.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label className="text-base">Reduced Motion</Label>
+              <Label className="text-base">Reduced motion</Label>
               <p className="text-sm text-muted-foreground">
-                Minimize animations and motion effects
+                Stronger minimization of transitions (in addition to turning off animations above).
               </p>
             </div>
-            <Switch />
+            <Switch checked={reducedMotion} onCheckedChange={setReducedMotion} />
           </div>
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label className="text-base">High Contrast</Label>
+              <Label className="text-base">High contrast borders</Label>
               <p className="text-sm text-muted-foreground">
-                Increase contrast for better visibility
+                Slightly stronger borders and inputs for clarity.
               </p>
             </div>
-            <Switch />
+            <Switch checked={highContrast} onCheckedChange={setHighContrast} />
           </div>
         </CardContent>
+        <CardFooter className="flex justify-end">
+          <Button type="button" variant="secondary" onClick={handleSave} disabled={isLoading}>
+            Save accessibility options
+          </Button>
+        </CardFooter>
       </Card>
     </div>
   )

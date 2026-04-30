@@ -81,6 +81,7 @@ export function NotificationSettings() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({ emailPreferences, pushPreferences }),
       })
       if (res.ok) {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import {
   Card,
   CardContent,
@@ -12,40 +12,125 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Loader2, Upload } from "lucide-react"
-import { users } from "@/lib/initial-data"
+import { Loader2 } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
+import { toast } from "sonner"
+
+type ProfilePrefs = { bio?: string; website?: string }
 
 export function AccountSettings() {
+  const { user, isAuthenticated, isLoading: authLoading, refreshSession } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
+  const [isFetching, setIsFetching] = useState(true)
   const [formData, setFormData] = useState({
-    name: users[0].name,
-    email: users[0].email,
-    username: "johndoe",
-    bio: "Software engineer at OctaVertex Media — shipping products and improving how we deliver.",
-    website: "https://example.com",
-    avatar: users[0].avatar || "/placeholder.svg"
+    name: "",
+    email: "",
+    bio: "",
+    website: "",
+    avatar: "",
   })
+  const [baseline, setBaseline] = useState(formData)
 
-  const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }))
+  const load = useCallback(async () => {
+    if (!user?.id) return
+    setIsFetching(true)
+    try {
+      const [userRes, prefRes] = await Promise.all([
+        fetch(`/api/users/${user.id}`, { credentials: "include" }),
+        fetch("/api/user/preferences", { credentials: "include" }),
+      ])
+      if (!userRes.ok) throw new Error("Failed to load profile")
+      const { user: u } = await userRes.json()
+      let profile: ProfilePrefs = {}
+      if (prefRes.ok) {
+        const prefs = await prefRes.json()
+        profile = (prefs.profile ?? {}) as ProfilePrefs
+      }
+      const next = {
+        name: u.name ?? "",
+        email: u.email ?? "",
+        bio: profile.bio ?? "",
+        website: profile.website ?? "",
+        avatar: u.avatar ?? "",
+      }
+      setFormData(next)
+      setBaseline(next)
+    } catch {
+      toast.error("Could not load account settings")
+    } finally {
+      setIsFetching(false)
+    }
+  }, [user?.id])
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && user?.id) void load()
+    else if (!authLoading && !isAuthenticated) setIsFetching(false)
+  }, [authLoading, isAuthenticated, user?.id, load])
+
+  const handleChange = (field: keyof typeof formData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!user?.id) return
     setIsLoading(true)
+    try {
+      const profileRes = await fetch("/api/user/preferences", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          profile: {
+            bio: formData.bio.trim(),
+            website: formData.website.trim(),
+          },
+        }),
+      })
+      if (!profileRes.ok) throw new Error("Preferences save failed")
 
-    // Simulate API call
-    setTimeout(() => {
+      const patchRes = await fetch(`/api/users/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          avatar: formData.avatar.trim() || null,
+        }),
+      })
+      if (!patchRes.ok) {
+        const err = await patchRes.json().catch(() => ({}))
+        throw new Error(err.error || "Profile update failed")
+      }
+
+      await refreshSession()
+      setBaseline({ ...formData })
+      toast.success("Profile saved")
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Save failed"
+      toast.error(message)
+    } finally {
       setIsLoading(false)
-      // Display success message (would use toast in a real app)
-      console.log("Account settings updated:", formData)
-    }, 1000)
+    }
+  }
+
+  if (authLoading || isFetching) {
+    return (
+      <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
+        <Loader2 className="h-5 w-5 animate-spin" />
+        Loading account…
+      </div>
+    )
+  }
+
+  if (!isAuthenticated || !user) {
+    return (
+      <p className="text-sm text-muted-foreground py-8">
+        Sign in to manage your account.
+      </p>
+    )
   }
 
   return (
@@ -55,59 +140,61 @@ export function AccountSettings() {
           <CardHeader>
             <CardTitle>Profile Information</CardTitle>
             <CardDescription>
-              Update your personal information and public profile
+              Your name and optional details are stored in this workspace. Email sign-in is managed by your auth provider.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="avatar">Profile Picture</Label>
+              <Label htmlFor="avatar">Profile picture</Label>
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16">
-                  <AvatarImage src={formData.avatar} alt={formData.name} />
-                  <AvatarFallback>{formData.name.charAt(0)}</AvatarFallback>
+                  <AvatarImage
+                    src={formData.avatar || "/placeholder.svg"}
+                    alt={formData.name}
+                  />
+                  <AvatarFallback>
+                    {(formData.name || user.email).charAt(0).toUpperCase()}
+                  </AvatarFallback>
                 </Avatar>
-
-                <Button type="button" variant="outline" size="sm" className="gap-2">
-                  <Upload className="h-4 w-4" />
-                  <span>Upload new image</span>
-                </Button>
               </div>
+              <Input
+                id="avatar"
+                type="url"
+                placeholder="https://…"
+                value={formData.avatar}
+                onChange={(e) => handleChange("avatar", e.target.value)}
+                className="max-w-xl"
+              />
+              <p className="text-xs text-muted-foreground">
+                Paste an image URL. File upload is not available yet.
+              </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="name">Full name</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => handleChange("name", e.target.value)}
+                  required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  value={formData.username}
-                  onChange={(e) => handleChange("username", e.target.value)}
-                />
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" value={formData.email} disabled />
+                <p className="text-xs text-muted-foreground">
+                  To change your email, contact an administrator or use your organization&apos;s account recovery flow.
+                </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleChange("email", e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="website">Website</Label>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="website">Website (optional)</Label>
                 <Input
                   id="website"
                   type="url"
+                  placeholder="https://"
                   value={formData.website}
                   onChange={(e) => handleChange("website", e.target.value)}
                 />
@@ -115,21 +202,24 @@ export function AccountSettings() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="bio">Bio</Label>
+              <Label htmlFor="bio">Bio (optional)</Label>
               <Textarea
                 id="bio"
                 value={formData.bio}
                 onChange={(e) => handleChange("bio", e.target.value)}
                 rows={4}
-                placeholder="Write a short bio about yourself"
+                placeholder="Short introduction"
               />
-              <p className="text-xs text-muted-foreground">
-                Brief description for your profile. URLs are hyperlinked.
-              </p>
             </div>
           </CardContent>
           <CardFooter className="justify-end space-x-2">
-            <Button variant="outline" type="button">Cancel</Button>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setFormData(baseline)}
+            >
+              Cancel
+            </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading ? (
                 <>
@@ -137,7 +227,7 @@ export function AccountSettings() {
                   Saving...
                 </>
               ) : (
-                "Save Changes"
+                "Save changes"
               )}
             </Button>
           </CardFooter>
@@ -145,76 +235,34 @@ export function AccountSettings() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Account Management</CardTitle>
+            <CardTitle>Sign-in</CardTitle>
             <CardDescription>
-              Manage your account settings and connected services
+              This app uses email and password via Neon Auth. Social login linking is not enabled for this workspace.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-4">
-              <h3 className="font-medium">Connected Accounts</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex justify-between items-center p-3 border rounded-md">
-                  <div className="flex items-center gap-3">
-                    <svg className="h-6 w-6" viewBox="0 0 24 24">
-                      <path
-                        d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
-                        fill="currentColor"
-                      />
-                    </svg>
-                    <div>
-                      <div className="font-medium">GitHub</div>
-                      <div className="text-sm text-muted-foreground">Connected</div>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" type="button">Disconnect</Button>
-                </div>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Password changes are on the Security tab. OAuth provider connect/disconnect is not available.
+            </p>
+          </CardContent>
+        </Card>
 
-                <div className="flex justify-between items-center p-3 border rounded-md">
-                  <div className="flex items-center gap-3">
-                    <svg className="h-6 w-6" viewBox="0 0 24 24">
-                      <path
-                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                        fill="#4285F4"
-                      />
-                      <path
-                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                        fill="#34A853"
-                      />
-                      <path
-                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                        fill="#FBBC05"
-                      />
-                      <path
-                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                        fill="#EA4335"
-                      />
-                    </svg>
-                    <div>
-                      <div className="font-medium">Google</div>
-                      <div className="text-sm text-muted-foreground">Not connected</div>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" type="button">Connect</Button>
+        <Card>
+          <CardHeader>
+            <CardTitle>Danger zone</CardTitle>
+            <CardDescription>Account deletion and data export</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border px-4 py-3">
+              <div>
+                <div className="font-medium">Delete account</div>
+                <div className="text-sm text-muted-foreground">
+                  Self-service deletion is not enabled. Ask a Super Admin to deactivate or remove your user record if required.
                 </div>
               </div>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-4">
-              <h3 className="font-medium text-destructive">Danger Zone</h3>
-              <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-destructive/10 bg-destructive/5 px-4 py-3">
-                <div>
-                  <div className="font-medium">Delete Account</div>
-                  <div className="text-sm text-muted-foreground">
-                    Permanently delete your account and all of your data
-                  </div>
-                </div>
-                <Button variant="destructive" size="sm" type="button">
-                  Delete Account
-                </Button>
-              </div>
+              <Button variant="outline" size="sm" type="button" disabled>
+                Not available
+              </Button>
             </div>
           </CardContent>
         </Card>

@@ -3,6 +3,7 @@ import "@/app/globals.css"
 import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/lib/auth-context"
+import { AppearanceFromPreferences } from "@/components/providers/appearance-from-preferences"
 import { Toaster } from "sonner"
 import { APP_COMPANY_NAME, APP_DISPLAY_NAME, OCTAVERTEX_MARKETING_URL } from "@/lib/brand"
 
@@ -48,6 +49,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
+            <AppearanceFromPreferences />
             {children}
           </AuthProvider>
           <Toaster

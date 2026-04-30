@@ -21,7 +21,7 @@
     "seed": "npx tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-ses": "^3.787.0",
+    "resend": "^4.0.0",
     "@calcom/embed-react": "^1.5.3",
     "@hello-pangea/dnd": "latest",
     "@hookform/resolvers": "^3.9.1",

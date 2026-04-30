@@ -54,7 +54,7 @@ class NotificationService {
     try {
       const payload = notificationToSendEmailPayload(user, type, data as Record<string, unknown>)
       if (!payload) {
-        console.log(`[Email] Notification "${type}" has no SES template mapping.`)
+        console.log(`[Email] Notification "${type}" has no email template mapping.`)
         return
       }
 

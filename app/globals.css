@@ -368,3 +368,39 @@
 .stagger-6 {
   animation-delay: 0.3s;
 }
+
+/* User appearance preferences (Settings → Appearance) */
+html[data-font-size="small"] {
+  font-size: 14px;
+}
+
+html[data-font-size="large"] {
+  font-size: 18px;
+}
+
+html[data-density="compact"] {
+  --radius: 0.4rem;
+}
+
+html[data-density="compact"] .rounded-xl {
+  border-radius: calc(var(--radius) + 2px);
+}
+
+html.app-reduce-motion *,
+html.app-reduce-motion *::before,
+html.app-reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+html.app-high-contrast {
+  --border: 0 0% 30%;
+  --input: 0 0% 30%;
+}
+
+html.app-high-contrast .dark {
+  --border: 0 0% 40%;
+  --input: 0 0% 40%;
+}

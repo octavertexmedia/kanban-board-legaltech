@@ -24,6 +24,7 @@ interface AuthContextType {
     isClientUser: boolean
     login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: User }>
     logout: () => Promise<void>
+    refreshSession: () => Promise<void>
     hasPermission: (permission: string) => boolean
     isManager: boolean
     isAdmin: boolean
@@ -129,6 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isClientUser: user?.userKind === 'CLIENT',
         login,
         logout,
+        refreshSession: refreshSession,
         hasPermission,
         isManager: user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN' || user?.role === 'MANAGER',
         isAdmin: user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN',
