@@ -96,12 +96,11 @@ export function TicketDetailsDialog({
   const [users, setUsers] = useState<DBUser[]>([])
   const [assigneeId, setAssigneeId] = useState(ticket?.assignee?.id || "")
   const [isUpdatingAssignee, setIsUpdatingAssignee] = useState(false)
-  const { token, user, isAdmin, isManager } = useAuth()
+  const { isAuthenticated, user, isAdmin, isManager } = useAuth()
   const canAssign = !readOnly && (isAdmin || isManager)
 
   const authHeaders = (): HeadersInit => ({
     "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   })
 
   const NONE = "__none__"
@@ -119,7 +118,7 @@ export function TicketDetailsDialog({
     setIsLoadingComments(true)
     try {
       const res = await fetch(`/api/tickets/${ticket.id}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       })
       const data = await res.json()
       if (res.ok && data.ticket) {
@@ -135,7 +134,7 @@ export function TicketDetailsDialog({
     if (users.length > 0) return
     try {
       const res = await fetch("/api/users", {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       })
       const data = await res.json()
       if (data.users) setUsers(data.users)

@@ -23,7 +23,7 @@ export function RegisterForm() {
     // Simulate registration
     setTimeout(() => {
       setIsLoading(false)
-      router.push("/login")
+      router.push("/auth/sign-in")
     }, 1500)
   }
 
@@ -88,7 +88,7 @@ export function RegisterForm() {
       <CardFooter className="flex justify-center">
         <div className="text-sm text-muted-foreground">
           Already have an account?{" "}
-          <Link href="/login" className="text-[#2962FF] hover:underline">
+          <Link href="/auth/sign-in" className="text-[#2962FF] hover:underline">
             Sign in
           </Link>
         </div>

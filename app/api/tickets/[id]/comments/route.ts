@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { requireAuth } from '@/lib/api-middleware'
 import { canAccessProject } from '@/lib/project-access'
-import { isClientAuth } from '@/lib/auth'
+import { isClientAuth } from '@/lib/authorization'
 
 export async function POST(
     req: NextRequest,
@@ -10,7 +10,7 @@ export async function POST(
 ) {
     try {
         const { id } = await params
-        const auth = requireAuth(req)
+        const auth = await requireAuth(req)
         if (auth instanceof NextResponse) return auth
         if (isClientAuth(auth)) {
             return NextResponse.json({ error: 'Forbidden — clients cannot comment' }, { status: 403 })

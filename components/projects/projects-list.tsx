@@ -40,7 +40,7 @@ export function ProjectsList() {
   const [projects, setProjects] = useState<DBProject[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { token, isClientUser } = useAuth()
+  const { isAuthenticated, isClientUser } = useAuth()
 
   const fetchProjects = useCallback(async () => {
     setIsLoading(true)
@@ -49,7 +49,7 @@ export function ProjectsList() {
       const params = new URLSearchParams()
       if (searchQuery) params.set("search", searchQuery)
       const res = await fetch(`/api/projects?${params}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Failed to load projects")
@@ -60,7 +60,7 @@ export function ProjectsList() {
     } finally {
       setIsLoading(false)
     }
-  }, [token, searchQuery])
+  }, [isAuthenticated, searchQuery])
 
   useEffect(() => {
     fetchProjects()

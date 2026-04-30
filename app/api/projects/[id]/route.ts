@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { requireAuth } from '@/lib/api-middleware'
 import { canAccessProject } from '@/lib/project-access'
-import { isClientAuth } from '@/lib/auth'
-import { hasPermission } from '@/lib/auth'
+import { hasPermission, isClientAuth } from '@/lib/authorization'
 
 // GET /api/projects/[id] — Get project with full board
 export async function GET(
@@ -11,7 +10,7 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const auth = requireAuth(req)
+        const auth = await requireAuth(req)
         if (auth instanceof NextResponse) return auth
 
         const { id } = await params
@@ -64,7 +63,7 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const auth = requireAuth(req)
+        const auth = await requireAuth(req)
         if (auth instanceof NextResponse) return auth
         if (isClientAuth(auth)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -108,7 +107,7 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const auth = requireAuth(req)
+        const auth = await requireAuth(req)
         if (auth instanceof NextResponse) return auth
         if (isClientAuth(auth)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

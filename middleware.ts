@@ -1,73 +1,20 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { readJwtPayloadUnsafe, jwtExpIsValid } from '@/lib/jwt-payload-edge'
+import { neonAuth } from '@/lib/neon/server'
 
-const CLIENT_HOME = '/client'
+const neonProtect = neonAuth.middleware({ loginUrl: '/auth/sign-in' })
 
-function isClientUserKind(payload: Record<string, unknown> | null): boolean {
-    return payload?.userKind === 'CLIENT'
-}
-
-/** Paths client users may access (prefix match for nested routes). */
-const CLIENT_ALLOWED_PREFIXES = [
-    '/client',
-    '/projects',
-    '/profile',
-    '/notifications',
-    '/login',
-]
-
-function clientMayAccessPath(pathname: string): boolean {
-    if (pathname === '/login') return true
-    return CLIENT_ALLOWED_PREFIXES.some(
-        (p) => pathname === p || pathname.startsWith(`${p}/`)
-    )
-}
-
-export function middleware(request: NextRequest) {
-    const token = request.cookies.get('auth-token')?.value
+export async function middleware(request: NextRequest) {
     const pathname = request.nextUrl.pathname
 
-    // Public paths that do not require authentication
-    const isPublicPath = pathname === '/login' ||
-        pathname.startsWith('/api/') ||
-        pathname.startsWith('/_next/') ||
-        pathname === '/favicon.ico'
-
-    if (!token && !isPublicPath) {
-        return NextResponse.redirect(new URL('/login', request.url))
+    if (pathname === '/login') {
+        return NextResponse.redirect(new URL('/auth/sign-in', request.url))
     }
 
-    const payload = token ? readJwtPayloadUnsafe(token) : null
-    const tokenUsable = Boolean(payload && jwtExpIsValid(payload))
-
-    if (token && !tokenUsable && !isPublicPath) {
-        const res = NextResponse.redirect(new URL('/login', request.url))
-        res.cookies.set('auth-token', '', { path: '/', maxAge: 0 })
-        return res
-    }
-
-    if (token && pathname === '/login') {
-        if (!tokenUsable) {
-            return NextResponse.next()
-        }
-        const dest = isClientUserKind(payload) ? CLIENT_HOME : '/'
-        return NextResponse.redirect(new URL(dest, request.url))
-    }
-
-    if (token && tokenUsable && isClientUserKind(payload) && !isPublicPath) {
-        if (!clientMayAccessPath(pathname)) {
-            return NextResponse.redirect(new URL(CLIENT_HOME, request.url))
-        }
-    }
-
-    if (token && tokenUsable && !isClientUserKind(payload) && pathname.startsWith('/client')) {
-        return NextResponse.redirect(new URL('/', request.url))
-    }
-
-    return NextResponse.next()
+    return neonProtect(request)
 }
 
 export const config = {
+    // Keep API routes out of middleware so unauthenticated JSON requests get 401, not HTML redirects.
     matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 }

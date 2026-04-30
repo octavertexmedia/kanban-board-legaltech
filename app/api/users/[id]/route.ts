@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { getAuthFromRequest } from '@/lib/api-middleware'
-import { isClientAuth } from '@/lib/auth'
+import { isClientAuth } from '@/lib/authorization'
 
 // GET /api/users/[id] — Fetch specific user details
 export async function GET(
@@ -10,7 +10,7 @@ export async function GET(
 ) {
     try {
         const { id } = await params
-        const auth = getAuthFromRequest(req)
+        const auth = await getAuthFromRequest(req)
 
         if (!auth) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -68,7 +68,7 @@ export async function PATCH(
 ) {
     try {
         const { id } = await params
-        const auth = getAuthFromRequest(req)
+        const auth = await getAuthFromRequest(req)
 
         if (!auth) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -172,7 +172,7 @@ export async function DELETE(
 ) {
     try {
         const { id } = await params
-        const auth = getAuthFromRequest(req)
+        const auth = await getAuthFromRequest(req)
 
         if (!auth) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

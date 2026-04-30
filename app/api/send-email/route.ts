@@ -5,7 +5,7 @@ import { isSendEmailAuthorized } from "@/lib/email/send-email-auth"
 
 export async function POST(req: NextRequest) {
   try {
-    if (!isSendEmailAuthorized(req)) {
+    if (!(await isSendEmailAuthorized(req))) {
       return NextResponse.json(
         {
           error:

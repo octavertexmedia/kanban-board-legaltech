@@ -98,20 +98,19 @@ export function ProjectKanbanBoard({ projectId, readOnly = false }: ProjectKanba
   const [isSaving, setIsSaving] = useState(false)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [selectedTicket, setSelectedTicket] = useState<DBTicket | null>(null)
-  const { token, isAdmin, isManager } = useAuth()
+  const { isAuthenticated, isAdmin, isManager } = useAuth()
   const canCreateTicket = !readOnly && (isAdmin || isManager)
 
   const authHeaders = useCallback((): HeadersInit => ({
     "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  }), [token])
+  }), [])
 
   const fetchBoard = useCallback(async () => {
     if (!projectId) return
     setIsLoading(true)
     try {
       const res = await fetch(`/api/projects/${projectId}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Failed to load board")
@@ -132,7 +131,7 @@ export function ProjectKanbanBoard({ projectId, readOnly = false }: ProjectKanba
     } finally {
       setIsLoading(false)
     }
-  }, [projectId, token])
+  }, [projectId, isAuthenticated])
 
   useEffect(() => {
     fetchBoard()

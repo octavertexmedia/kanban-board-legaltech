@@ -50,19 +50,19 @@ export function CreateTicketDialog({
   const [assigneeId, setAssigneeId] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [users, setUsers] = useState<DBUser[]>([])
-  const { token } = useAuth()
+  const { isAuthenticated } = useAuth()
 
   // Fetch users when dialog opens
   useEffect(() => {
     if (open && users.length === 0) {
       fetch("/api/users", {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       })
         .then(r => r.json())
         .then(data => setUsers(data.users || []))
         .catch(() => { })
     }
-  }, [open, token, users.length])
+  }, [open, isAuthenticated, users.length])
 
   const NONE = "__none__"
 
@@ -90,7 +90,6 @@ export function CreateTicketDialog({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           title: title.trim(),

@@ -25,17 +25,17 @@ interface DBMeeting {
 export function UpcomingMeetings() {
   const [meetings, setMeetings] = useState<DBMeeting[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const { token } = useAuth()
+  const { isAuthenticated } = useAuth()
 
   useEffect(() => {
     fetch("/api/meetings?upcoming=true", {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'include',
     })
       .then(r => r.json())
       .then(data => setMeetings((data.meetings || []).slice(0, 3)))
       .catch(() => { })
       .finally(() => setIsLoading(false))
-  }, [token])
+  }, [isAuthenticated])
 
   return (
     <Card className="border-0 shadow-xl shadow-black/5 ring-1 ring-border/50 bg-card/60 backdrop-blur-xl transition-all duration-300 hover:shadow-2xl">

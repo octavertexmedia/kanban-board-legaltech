@@ -45,18 +45,18 @@ export function ScheduleMeetingDialog({
   const [externalEmails, setExternalEmails] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [users, setUsers] = useState<DBUser[]>([])
-  const { token, user } = useAuth()
+  const { isAuthenticated, user } = useAuth()
 
   useEffect(() => {
     if (open && users.length === 0) {
       fetch("/api/users", {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       })
         .then(r => r.json())
         .then(data => setUsers(data.users || []))
         .catch(() => { })
     }
-  }, [open, token, users.length])
+  }, [open, isAuthenticated, users.length])
 
   const reset = () => {
     setTitle("")
@@ -82,8 +82,8 @@ export function ScheduleMeetingDialog({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
+        credentials: "include",
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim(),
@@ -127,8 +127,8 @@ export function ScheduleMeetingDialog({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
+        credentials: "include",
         body: JSON.stringify({
           title: `Instant Meeting - ${user?.name || 'Team'}`,
           description: "Instant meeting",

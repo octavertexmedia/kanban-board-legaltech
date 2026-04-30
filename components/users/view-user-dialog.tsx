@@ -36,14 +36,14 @@ export function ViewUserDialog({ userId, open, onOpenChange, onUpdate }: ViewUse
     const [isUploading, setIsUploading] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
-    const { token, user: currentUser, isAdmin, isSuperAdmin } = useAuth()
+    const { isAuthenticated, user: currentUser, isAdmin, isSuperAdmin } = useAuth()
 
     useEffect(() => {
         if (open && userId) {
             setIsLoading(true)
             setIsEditing(false)
             fetch(`/api/users/${userId}`, {
-                headers: token ? { Authorization: `Bearer ${token}` } : {},
+                credentials: 'include',
             })
                 .then(r => r.json())
                 .then(data => {
@@ -59,7 +59,7 @@ export function ViewUserDialog({ userId, open, onOpenChange, onUpdate }: ViewUse
         } else {
             setUserData(null)
         }
-    }, [open, userId, token])
+    }, [open, userId, isAuthenticated])
 
     if (!userId) return null
 
@@ -74,8 +74,8 @@ export function ViewUserDialog({ userId, open, onOpenChange, onUpdate }: ViewUse
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
                 },
+                credentials: 'include',
                 body: JSON.stringify({ name: editName.trim() }),
             })
             const data = await res.json()
@@ -106,7 +106,7 @@ export function ViewUserDialog({ userId, open, onOpenChange, onUpdate }: ViewUse
 
             const uploadRes = await fetch(`/api/upload?filename=${encodeURIComponent(file.name)}`, {
                 method: 'POST',
-                headers: token ? { Authorization: `Bearer ${token}` } : {},
+                credentials: 'include',
                 body: file,
             })
 
@@ -120,8 +120,8 @@ export function ViewUserDialog({ userId, open, onOpenChange, onUpdate }: ViewUse
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
                 },
+                credentials: 'include',
                 body: JSON.stringify({ avatar: avatarUrl }),
             })
 

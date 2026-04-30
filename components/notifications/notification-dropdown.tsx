@@ -29,20 +29,20 @@ interface DBNotification {
 export function NotificationDropdown() {
   const [notifications, setNotifications] = useState<DBNotification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
-  const { token, isAuthenticated } = useAuth()
+  const { isAuthenticated } = useAuth()
 
   const fetchNotifications = useCallback(async () => {
-    if (!token) return
+    if (!isAuthenticated) return
     try {
       const res = await fetch("/api/notifications", {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
       })
       if (!res.ok) return
       const data = await res.json()
       setNotifications(data.notifications || [])
       setUnreadCount(data.unreadCount || 0)
     } catch { }
-  }, [token])
+  }, [isAuthenticated])
 
   // Initial fetch + polling every 30 seconds
   useEffect(() => {
@@ -58,8 +58,8 @@ export function NotificationDropdown() {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
+        credentials: "include",
         body: JSON.stringify({ read: true }),
       })
       // Optimistic update
@@ -74,7 +74,7 @@ export function NotificationDropdown() {
     try {
       await fetch("/api/notifications/mark-all-read", {
         method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       })
       setNotifications(prev => prev.map(n => ({ ...n, readAt: n.readAt || new Date().toISOString() })))
       setUnreadCount(0)

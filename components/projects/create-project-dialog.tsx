@@ -37,19 +37,19 @@ export function CreateProjectDialog({ open, onOpenChange, onProjectCreate }: Cre
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [allUsers, setAllUsers] = useState<TeamMember[]>([])
-  const { token } = useAuth()
+  const { isAuthenticated } = useAuth()
 
   // Fetch users when dialog opens
   useEffect(() => {
     if (open && allUsers.length === 0) {
       fetch("/api/users", {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       })
         .then(r => r.json())
         .then(data => setAllUsers(data.users || []))
         .catch(() => { })
     }
-  }, [open, token, allUsers.length])
+  }, [open, isAuthenticated, allUsers.length])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -61,7 +61,6 @@ export function CreateProjectDialog({ open, onOpenChange, onProjectCreate }: Cre
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           name: name.trim(),

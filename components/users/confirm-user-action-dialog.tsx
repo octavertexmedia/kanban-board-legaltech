@@ -34,7 +34,7 @@ export function ConfirmUserActionDialog({
 }: ConfirmUserActionDialogProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [reassignTo, setReassignTo] = useState<string>("none")
-    const { token } = useAuth()
+    const { isAuthenticated } = useAuth()
 
     if (!user || !action) return null
 
@@ -51,15 +51,15 @@ export function ConfirmUserActionDialog({
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
-                            ...(token ? { Authorization: `Bearer ${token}` } : {}),
                         },
+                        credentials: "include",
                         body: JSON.stringify({ fromUserId: user.id, toUserId: reassignTo }),
                     })
                 }
 
                 const res = await fetch(`/api/users/${user.id}`, {
                     method: "DELETE",
-                    headers: token ? { Authorization: `Bearer ${token}` } : {},
+                    credentials: 'include',
                 })
                 if (!res.ok) {
                     const data = await res.json()
@@ -77,8 +77,8 @@ export function ConfirmUserActionDialog({
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
-                            ...(token ? { Authorization: `Bearer ${token}` } : {}),
                         },
+                        credentials: "include",
                         body: JSON.stringify({ fromUserId: user.id, toUserId: reassignTo }),
                     })
                 }
@@ -87,8 +87,8 @@ export function ConfirmUserActionDialog({
                     method: "PATCH",
                     headers: {
                         "Content-Type": "application/json",
-                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
                     },
+                    credentials: "include",
                     body: JSON.stringify({ status: newStatus }),
                 })
                 if (!res.ok) {

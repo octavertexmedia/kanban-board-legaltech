@@ -33,7 +33,7 @@ export function ProjectStatusUpdatesPanel({
   projectId: string
   readOnly?: boolean
 }) {
-  const { token, isClientUser } = useAuth()
+  const { isAuthenticated, isClientUser } = useAuth()
   const [updates, setUpdates] = useState<UpdateRow[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -44,16 +44,15 @@ export function ProjectStatusUpdatesPanel({
   const headers = useCallback((): HeadersInit => {
     return {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     }
-  }, [token])
+  }, [isAuthenticated])
 
   const load = useCallback(async () => {
     if (!projectId) return
     setLoading(true)
     try {
       const res = await fetch(`/api/projects/${projectId}/status-updates`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Failed to load updates")
@@ -63,7 +62,7 @@ export function ProjectStatusUpdatesPanel({
     } finally {
       setLoading(false)
     }
-  }, [projectId, token])
+  }, [projectId, isAuthenticated])
 
   useEffect(() => {
     load()

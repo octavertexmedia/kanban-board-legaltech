@@ -1,66 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken, hasPermission, type JWTPayload } from '@/lib/auth'
+import { hasPermission, type JWTPayload } from '@/lib/authorization'
 import { Role } from '@prisma/client'
+import prisma from '@/lib/db'
+import { neonAuth } from '@/lib/neon/server'
 
-// ─── Extract auth from request ───────────────────────────
-export function getAuthFromRequest(req: NextRequest): JWTPayload | null {
-    // Check Authorization header
-    const authHeader = req.headers.get('authorization')
-    if (authHeader?.startsWith('Bearer ')) {
-        const token = authHeader.substring(7)
-        return verifyToken(token)
+export async function getAuthFromRequest(_req: NextRequest): Promise<JWTPayload | null> {
+    const { data: session } = await neonAuth.getSession()
+    const email = session?.user?.email?.toLowerCase()?.trim()
+    if (!email) return null
+
+    const user = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true, email: true, role: true, userKind: true, status: true },
+    })
+    if (!user || user.status === 'INACTIVE') return null
+
+    return {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        userKind: user.userKind ?? 'INTERNAL',
     }
-
-    // Check cookie
-    const tokenCookie = req.cookies.get('auth-token')
-    if (tokenCookie) {
-        return verifyToken(tokenCookie.value)
-    }
-
-    return null
 }
 
-// ─── Require authentication ──────────────────────────────
-export function requireAuth(req: NextRequest): JWTPayload | NextResponse {
-    const auth = getAuthFromRequest(req)
+export async function requireAuth(req: NextRequest): Promise<JWTPayload | NextResponse> {
+    const auth = await getAuthFromRequest(req)
     if (!auth) {
-        return NextResponse.json(
-            { error: 'Unauthorized — please log in' },
-            { status: 401 }
-        )
+        return NextResponse.json({ error: 'Unauthorized — please log in' }, { status: 401 })
     }
     return auth
 }
 
-// ─── Require specific permission ─────────────────────────
-export function requirePermission(
+export async function requirePermission(
     req: NextRequest,
-    permission: string
-): JWTPayload | NextResponse {
-    const auth = requireAuth(req)
+    permission: string,
+): Promise<JWTPayload | NextResponse> {
+    const auth = await requireAuth(req)
     if (auth instanceof NextResponse) return auth
 
     if (!hasPermission(auth.role as Role, permission)) {
         return NextResponse.json(
             { error: `Forbidden — you need "${permission}" permission` },
-            { status: 403 }
+            { status: 403 },
         )
     }
     return auth
 }
 
-// ─── Require specific roles ──────────────────────────────
-export function requireRole(
+export async function requireRole(
     req: NextRequest,
     ...roles: Role[]
-): JWTPayload | NextResponse {
-    const auth = requireAuth(req)
+): Promise<JWTPayload | NextResponse> {
+    const auth = await requireAuth(req)
     if (auth instanceof NextResponse) return auth
 
     if (!roles.includes(auth.role as Role)) {
         return NextResponse.json(
             { error: `Forbidden — requires role: ${roles.join(' or ')}` },
-            { status: 403 }
+            { status: 403 },
         )
     }
     return auth

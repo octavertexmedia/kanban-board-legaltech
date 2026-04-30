@@ -1,29 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getAuthFromRequest } from '@/lib/api-middleware'
-import prisma from '@/lib/db'
+import { NextResponse } from 'next/server'
+import { getSessionAppUser } from '@/lib/neon/sync-app-user'
 
-export async function GET(req: NextRequest) {
-    const auth = getAuthFromRequest(req)
-
-    if (!auth) {
-        return NextResponse.json({ user: null }, { status: 200 })
-    }
-
+export async function GET() {
     try {
-        const user = await prisma.user.findUnique({
-            where: { id: auth.userId },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                role: true,
-                userKind: true,
-                status: true,
-                avatar: true,
-                lastActive: true,
-            },
-        })
-
+        const { user } = await getSessionAppUser()
         return NextResponse.json({ user })
     } catch {
         return NextResponse.json({ user: null })

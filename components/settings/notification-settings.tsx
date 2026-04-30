@@ -39,7 +39,7 @@ const DEFAULT_PUSH = {
 export function NotificationSettings() {
   const [isLoading, setIsLoading] = useState(false)
   const [isFetching, setIsFetching] = useState(true)
-  const { token } = useAuth()
+  const { isAuthenticated } = useAuth()
 
   const [emailPreferences, setEmailPreferences] = useState(DEFAULT_EMAIL)
   const [pushPreferences, setPushPreferences] = useState(DEFAULT_PUSH)
@@ -49,7 +49,7 @@ export function NotificationSettings() {
     const loadPrefs = async () => {
       try {
         const res = await fetch("/api/user/preferences", {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          credentials: 'include',
         })
         if (res.ok) {
           const data = await res.json()
@@ -60,9 +60,9 @@ export function NotificationSettings() {
         setIsFetching(false)
       }
     }
-    if (token) loadPrefs()
+    if (isAuthenticated) loadPrefs()
     else setIsFetching(false)
-  }, [token])
+  }, [isAuthenticated])
 
   const handleEmailChange = (field: string, checked: boolean) => {
     setEmailPreferences(prev => ({ ...prev, [field]: checked }))
@@ -80,7 +80,6 @@ export function NotificationSettings() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ emailPreferences, pushPreferences }),
       })

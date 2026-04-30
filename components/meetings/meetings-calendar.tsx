@@ -34,14 +34,14 @@ export function MeetingsCalendar() {
   const [isScheduleOpen, setIsScheduleOpen] = useState(false)
   const [meetings, setMeetings] = useState<DBMeeting[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const { token } = useAuth()
+  const { isAuthenticated } = useAuth()
 
   const fetchMeetingsForDate = useCallback(async (selectedDate: Date) => {
     setIsLoading(true)
     try {
       const dateStr = selectedDate.toISOString().split("T")[0]
       const res = await fetch(`/api/meetings?date=${dateStr}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Failed to load meetings")
@@ -51,7 +51,7 @@ export function MeetingsCalendar() {
     } finally {
       setIsLoading(false)
     }
-  }, [token])
+  }, [isAuthenticated])
 
   useEffect(() => {
     if (date) fetchMeetingsForDate(date)

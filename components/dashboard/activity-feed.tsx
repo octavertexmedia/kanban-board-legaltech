@@ -32,11 +32,11 @@ export function ActivityFeed() {
   const [filter, setFilter] = useState("all")
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const { token } = useAuth()
+  const { isAuthenticated } = useAuth()
 
   useEffect(() => {
     fetch("/api/dashboard/stats", {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'include',
     })
       .then(r => r.json())
       .then(data => {
@@ -46,7 +46,7 @@ export function ActivityFeed() {
       })
       .catch(console.error)
       .finally(() => setIsLoading(false))
-  }, [token])
+  }, [isAuthenticated])
 
   const filteredActivities = filter === "all"
     ? activities

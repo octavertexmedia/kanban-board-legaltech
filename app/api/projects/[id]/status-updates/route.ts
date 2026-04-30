@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { requireAuth } from '@/lib/api-middleware'
 import { canAccessProject } from '@/lib/project-access'
-import { isClientAuth } from '@/lib/auth'
+import { isClientAuth } from '@/lib/authorization'
 import { ProjectMemberRole, StatusUpdateVisibility, UserKind } from '@prisma/client'
 
 // GET /api/projects/[id]/status-updates
@@ -11,7 +11,7 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const auth = requireAuth(req)
+        const auth = await requireAuth(req)
         if (auth instanceof NextResponse) return auth
 
         const { id: projectId } = await params
@@ -45,7 +45,7 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const auth = requireAuth(req)
+        const auth = await requireAuth(req)
         if (auth instanceof NextResponse) return auth
         if (isClientAuth(auth)) {
             return NextResponse.json({ error: 'Forbidden — clients cannot post updates' }, { status: 403 })

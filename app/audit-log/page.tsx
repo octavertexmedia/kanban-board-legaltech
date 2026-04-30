@@ -29,7 +29,7 @@ interface AuditLog {
 }
 
 export default function AuditLogPage() {
-    const { token, isAdmin, isSuperAdmin } = useAuth()
+    const { isAuthenticated, isAdmin, isSuperAdmin } = useAuth()
     const canAccess = isAdmin || isSuperAdmin
 
     const [logs, setLogs] = useState<AuditLog[]>([])
@@ -44,7 +44,7 @@ export default function AuditLogPage() {
     const [entityFilter, setEntityFilter] = useState("all")
 
     const fetchLogs = useCallback(async () => {
-        if (!token || !canAccess) return
+        if (!isAuthenticated || !canAccess) return
         setIsLoading(true)
         try {
             const params = new URLSearchParams({ page: page.toString(), limit: "30" })
@@ -53,7 +53,7 @@ export default function AuditLogPage() {
             if (search.trim()) params.append("search", search.trim())
 
             const res = await fetch(`/api/audit-logs?${params}`, {
-                headers: { Authorization: `Bearer ${token}` },
+                credentials: "include",
             })
             const data = await res.json()
             if (res.ok) {
@@ -63,7 +63,7 @@ export default function AuditLogPage() {
             }
         } catch { }
         finally { setIsLoading(false) }
-    }, [token, canAccess, page, actionFilter, entityFilter, search])
+    }, [isAuthenticated, canAccess, page, actionFilter, entityFilter, search])
 
     useEffect(() => {
         fetchLogs()

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { requireAuth } from '@/lib/api-middleware'
 import { canAccessProject } from '@/lib/project-access'
-import { isClientAuth } from '@/lib/auth'
+import { isClientAuth } from '@/lib/authorization'
 
 // GET /api/tickets/[id]
 export async function GET(
@@ -10,7 +10,7 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const auth = requireAuth(req)
+        const auth = await requireAuth(req)
         if (auth instanceof NextResponse) return auth
 
         const { id } = await params
@@ -57,7 +57,7 @@ export async function PATCH(
 ) {
     try {
         const { id } = await params
-        const auth = requireAuth(req)
+        const auth = await requireAuth(req)
         if (auth instanceof NextResponse) return auth
         if (isClientAuth(auth)) {
             return NextResponse.json({ error: 'Forbidden — clients cannot edit tickets' }, { status: 403 })
@@ -219,7 +219,7 @@ export async function DELETE(
 ) {
     try {
         const { id } = await params
-        const auth = requireAuth(req)
+        const auth = await requireAuth(req)
         if (auth instanceof NextResponse) return auth
         if (isClientAuth(auth)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

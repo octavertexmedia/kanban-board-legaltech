@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { requireAuth } from '@/lib/api-middleware'
 import { getAccessibleProjectIds, canAccessProject } from '@/lib/project-access'
-import { isClientAuth } from '@/lib/auth'
+import { isClientAuth } from '@/lib/authorization'
 
 // GET /api/tickets — List tickets with filters
 export async function GET(req: NextRequest) {
     try {
-        const auth = requireAuth(req)
+        const auth = await requireAuth(req)
         if (auth instanceof NextResponse) return auth
 
         const accessibleIds = await getAccessibleProjectIds(prisma, auth)
@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
 // POST /api/tickets — Create ticket
 export async function POST(req: NextRequest) {
     try {
-        const auth = requireAuth(req)
+        const auth = await requireAuth(req)
         if (auth instanceof NextResponse) return auth
         if (isClientAuth(auth)) {
             return NextResponse.json({ error: 'Forbidden — clients cannot create tickets' }, { status: 403 })

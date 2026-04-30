@@ -42,13 +42,13 @@ export function UserManagement() {
   const [roleUserModalData, setRoleUserModalData] = useState<any | null>(null)
   const [confirmAction, setConfirmAction] = useState<{ user: any; action: "deactivate" | "activate" | "delete" } | null>(null)
 
-  const { token, isAdmin, isManager, isSuperAdmin, user: currentUser, isLoading: isAuthLoading } = useAuth()
+  const { isAuthenticated, isAdmin, isManager, isSuperAdmin, user: currentUser, isLoading: isAuthLoading } = useAuth()
   const canSeeTeam = isAdmin || isManager || isSuperAdmin
   const canCreateUsers = isAdmin || isSuperAdmin
 
   const fetchUsers = () => {
     fetch("/api/users", {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'include',
     })
       .then(r => r.json())
       .then(data => {
@@ -66,7 +66,7 @@ export function UserManagement() {
       return
     }
     fetchUsers()
-  }, [token, canSeeTeam, isAuthLoading])
+  }, [isAuthenticated, canSeeTeam, isAuthLoading])
 
   if (isAuthLoading || isLoading) {
     return (

@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { requireAuth } from '@/lib/api-middleware'
 import { getAccessibleProjectIds, hasGlobalProjectAccess } from '@/lib/project-access'
-import { isClientAuth } from '@/lib/auth'
+import { isClientAuth } from '@/lib/authorization'
 
 // GET /api/dashboard/stats — Get all dashboard stats (scoped to accessible projects)
 export async function GET(req: NextRequest) {
     try {
-        const auth = requireAuth(req)
+        const auth = await requireAuth(req)
         if (auth instanceof NextResponse) return auth
 
         const accessibleIds = await getAccessibleProjectIds(prisma, auth)

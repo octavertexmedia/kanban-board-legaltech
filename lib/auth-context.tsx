@@ -2,6 +2,9 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { createAuthClient } from '@neondatabase/auth/next'
+
+const authClient = createAuthClient()
 
 interface User {
     id: string
@@ -64,81 +67,63 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
-    const [token, setToken] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const router = useRouter()
 
-    // Check session on mount
-    useEffect(() => {
-        const savedToken = localStorage.getItem('auth-token')
-        if (savedToken) {
-            setToken(savedToken)
-            checkSession(savedToken)
-        } else {
-            setIsLoading(false)
-        }
-    }, [])
-
-    const checkSession = async (authToken: string) => {
+    const refreshSession = useCallback(async () => {
         try {
-            const res = await fetch('/api/auth/session', {
-                headers: { Authorization: `Bearer ${authToken}` },
-            })
+            const res = await fetch('/api/auth/session', { credentials: 'include' })
             const data = await res.json()
-            if (data.user) {
-                setUser(data.user)
-            } else {
-                localStorage.removeItem('auth-token')
-                setToken(null)
-            }
+            if (data.user) setUser(data.user)
+            else setUser(null)
         } catch {
-            localStorage.removeItem('auth-token')
-            setToken(null)
+            setUser(null)
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [])
+
+    useEffect(() => {
+        void refreshSession()
+    }, [refreshSession])
 
     const login = useCallback(async (email: string, password: string) => {
         try {
-            const res = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
-            })
-            const data = await res.json()
-
-            if (!res.ok) {
-                return { success: false, error: data.error || 'Login failed' }
+            const { error } = await authClient.signIn.email({ email, password })
+            if (error) {
+                return { success: false, error: error.message || 'Login failed' }
             }
-
-            setUser(data.user)
-            setToken(data.token)
-            localStorage.setItem('auth-token', data.token)
-            return { success: true, user: data.user }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+            await refreshSession()
+            const res = await fetch('/api/auth/session', { credentials: 'include' })
+            const data = await res.json()
+            return { success: true, user: data.user as User | undefined }
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Login failed'
+            return { success: false, error: message }
         }
-    }, [])
+    }, [refreshSession])
 
     const logout = useCallback(async () => {
         try {
-            await fetch('/api/auth/logout', { method: 'POST' })
-        } catch { }
+            await authClient.signOut()
+        } catch {
+            await fetch('/api/auth/sign-out', { method: 'POST', credentials: 'include' })
+        }
         setUser(null)
-        setToken(null)
-        localStorage.removeItem('auth-token')
-        router.push('/login')
+        router.push('/auth/sign-in')
     }, [router])
 
-    const hasPermission = useCallback((permission: string) => {
-        if (!user) return false
-        return ROLE_PERMISSIONS[user.role]?.includes(permission) ?? false
-    }, [user])
+    const hasPermission = useCallback(
+        (permission: string) => {
+            if (!user) return false
+            return ROLE_PERMISSIONS[user.role]?.includes(permission) ?? false
+        },
+        [user],
+    )
 
     const value: AuthContextType = {
         user,
-        token,
+        token: null,
         isLoading,
         isAuthenticated: !!user,
         isClientUser: user?.userKind === 'CLIENT',

@@ -1,6 +1,6 @@
 import type { PrismaClient } from '@prisma/client'
 import { UserKind, ProjectMemberRole } from '@prisma/client'
-import type { JWTPayload } from '@/lib/auth'
+import type { JWTPayload } from '@/lib/authorization'
 
 export function hasGlobalProjectAccess(payload: JWTPayload): boolean {
     return payload.role === 'SUPER_ADMIN' || payload.role === 'ADMIN'

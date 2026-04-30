@@ -5,7 +5,7 @@ import { getAuthFromRequest } from '@/lib/api-middleware'
 // GET /api/user/preferences — Load notification preferences
 export async function GET(req: NextRequest) {
     try {
-        const auth = getAuthFromRequest(req)
+        const auth = await getAuthFromRequest(req)
         if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
         const user = await prisma.user.findUnique({
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 // PUT /api/user/preferences — Save notification preferences
 export async function PUT(req: NextRequest) {
     try {
-        const auth = getAuthFromRequest(req)
+        const auth = await getAuthFromRequest(req)
         if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
         const body = await req.json()

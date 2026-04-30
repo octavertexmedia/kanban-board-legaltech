@@ -18,19 +18,19 @@ interface ProjectCard {
 }
 
 export default function ClientPortalPage() {
-  const { token, isLoading } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth()
   const [projects, setProjects] = useState<ProjectCard[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (isLoading) return
-    if (!token) {
+    if (!isAuthenticated) {
       setLoading(false)
       return
     }
     setLoading(true)
     fetch("/api/projects", {
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: "include",
     })
       .then((r) => r.json())
       .then((data) => {
@@ -39,7 +39,7 @@ export default function ClientPortalPage() {
       })
       .catch(() => toast.error("Failed to load projects"))
       .finally(() => setLoading(false))
-  }, [token, isLoading])
+  }, [isAuthenticated, isLoading])
 
   if (isLoading || loading) {
     return (

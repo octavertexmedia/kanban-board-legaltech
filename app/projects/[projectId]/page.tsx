@@ -38,13 +38,13 @@ export default function ProjectPage() {
   const projectId = params.projectId as string
   const [project, setProject] = useState<BoardProject | null>(null)
   const [loading, setLoading] = useState(true)
-  const { token, isClientUser } = useAuth()
+  const { isAuthenticated, isClientUser } = useAuth()
 
   useEffect(() => {
     if (!projectId) return
     setLoading(true)
     fetch(`/api/projects/${projectId}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'include',
     })
       .then(r => r.json())
       .then(data => {
@@ -56,7 +56,7 @@ export default function ProjectPage() {
       })
       .catch(() => toast.error("Failed to load project"))
       .finally(() => setLoading(false))
-  }, [projectId, token])
+  }, [projectId, isAuthenticated])
 
   const statusColor =
     project?.status === "ACTIVE" ? "bg-emerald-100 text-emerald-800" :

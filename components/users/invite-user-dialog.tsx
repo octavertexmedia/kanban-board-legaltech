@@ -31,7 +31,7 @@ export function InviteUserDialog({ open, onOpenChange, onUserCreated }: InviteUs
   const [showPassword, setShowPassword] = useState(false)
   const [role, setRole] = useState("ENGINEER")
   const [isLoading, setIsLoading] = useState(false)
-  const { token, isSuperAdmin, isAdmin } = useAuth()
+  const { isAuthenticated, isSuperAdmin, isAdmin } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,8 +42,8 @@ export function InviteUserDialog({ open, onOpenChange, onUserCreated }: InviteUs
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
+        credentials: 'include',
         body: JSON.stringify({
           name: name.trim(),
           email: email.trim().toLowerCase(),

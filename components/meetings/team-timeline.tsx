@@ -99,22 +99,22 @@ export function TeamTimeline() {
     const [users, setUsers] = useState<DBUser[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isScheduleOpen, setIsScheduleOpen] = useState(false)
-    const { token } = useAuth()
+    const { isAuthenticated } = useAuth()
     const scrollRef = useRef<HTMLDivElement>(null)
 
     const fetchUsers = useCallback(async () => {
         try {
-            const res = await fetch("/api/users", { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+            const res = await fetch("/api/users", { credentials: 'include' })
             const data = await res.json()
             if (res.ok) setUsers(data.users || [])
         } catch { }
-    }, [token])
+    }, [isAuthenticated])
 
     const fetchMeetings = useCallback(async (date: Date) => {
         setIsLoading(true)
         try {
             const dateStr = date.toISOString().split("T")[0]
-            const res = await fetch(`/api/meetings?date=${dateStr}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+            const res = await fetch(`/api/meetings?date=${dateStr}`, { credentials: 'include' })
             const data = await res.json()
             if (res.ok) setMeetings(data.meetings || [])
             else throw new Error(data.error)
@@ -123,7 +123,7 @@ export function TeamTimeline() {
         } finally {
             setIsLoading(false)
         }
-    }, [token])
+    }, [isAuthenticated])
 
     useEffect(() => { fetchUsers() }, [fetchUsers])
     useEffect(() => { fetchMeetings(selectedDate) }, [selectedDate, fetchMeetings])

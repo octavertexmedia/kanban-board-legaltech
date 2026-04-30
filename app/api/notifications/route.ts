@@ -5,7 +5,7 @@ import { getAuthFromRequest } from '@/lib/api-middleware'
 // GET /api/notifications
 export async function GET(req: NextRequest) {
     try {
-        const auth = getAuthFromRequest(req)
+        const auth = await getAuthFromRequest(req)
         if (!auth) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }

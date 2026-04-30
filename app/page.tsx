@@ -23,14 +23,20 @@ const fadeUp = {
 }
 
 export default function HomePage() {
-  const { user, isLoading, isAuthenticated } = useAuth()
+  const { user, isLoading, isAuthenticated, isClientUser } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push('/login')
+      router.push('/auth/sign-in')
     }
   }, [isLoading, isAuthenticated, router])
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && isClientUser) {
+      router.replace('/client')
+    }
+  }, [isLoading, isAuthenticated, isClientUser, router])
 
   if (isLoading) {
     return (

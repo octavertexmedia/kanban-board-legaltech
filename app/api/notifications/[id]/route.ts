@@ -12,7 +12,7 @@ export async function PATCH(
 
         // Handle "read-all"
         if (id === 'read-all') {
-            const auth = getAuthFromRequest(req)
+            const auth = await getAuthFromRequest(req)
             if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
             await prisma.notification.updateMany({

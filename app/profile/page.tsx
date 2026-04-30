@@ -12,14 +12,14 @@ import { Loader2, TicketIcon, Clock, ShieldCheck, Shield } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 
 export default function ProfilePage() {
-  const { user: authUser, token, isAuthenticated } = useAuth()
+  const { user: authUser, isAuthenticated } = useAuth()
   const [profileData, setProfileData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!isAuthenticated || !authUser?.id) return
     fetch(`/api/users/${authUser.id}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'include',
     })
       .then(r => r.json())
       .then(data => {
@@ -27,7 +27,7 @@ export default function ProfilePage() {
       })
       .catch(console.error)
       .finally(() => setLoading(false))
-  }, [isAuthenticated, authUser?.id, token])
+  }, [isAuthenticated, authUser?.id])
 
   if (loading || !profileData) {
     return (

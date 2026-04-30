@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { getAuthFromRequest, requireRole } from '@/lib/api-middleware'
-import { hashPassword, isClientAuth } from '@/lib/auth'
+import { hashPassword, isClientAuth } from '@/lib/authorization'
+import { neonAuth } from '@/lib/neon/server'
 import { UserKind } from '@prisma/client'
 
 // GET /api/users — List users (requires authentication)
 export async function GET(req: NextRequest) {
     try {
-        const auth = getAuthFromRequest(req)
+        const auth = await getAuthFromRequest(req)
         if (!auth) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
@@ -60,7 +61,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         // Only SUPER_ADMIN and ADMIN can create users
-        const auth = requireRole(req, 'SUPER_ADMIN' as any, 'ADMIN' as any)
+        const auth = await requireRole(req, 'SUPER_ADMIN' as any, 'ADMIN' as any)
         if (auth instanceof NextResponse) return auth
 
         const body = await req.json()
@@ -145,6 +146,23 @@ export async function POST(req: NextRequest) {
                 createdAt: true,
             },
         })
+
+        const neonUp = await neonAuth.signUp.email({
+            email: email.toLowerCase(),
+            password,
+            name,
+        })
+        if (neonUp.error) {
+            await prisma.user.delete({ where: { id: newUser.id } }).catch(() => {})
+            return NextResponse.json(
+                {
+                    error:
+                        neonUp.error.message ||
+                        'Could not register Neon Auth sign-in for this user (email may already exist in Neon Auth).',
+                },
+                { status: 400 },
+            )
+        }
 
         // Log activity
         await prisma.activityLog.create({

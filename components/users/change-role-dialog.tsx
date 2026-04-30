@@ -25,7 +25,7 @@ interface ChangeRoleDialogProps {
 export function ChangeRoleDialog({ user, open, onOpenChange, onRoleChanged }: ChangeRoleDialogProps) {
     const [role, setRole] = useState(user?.role || "ENGINEER")
     const [isLoading, setIsLoading] = useState(false)
-    const { token, isSuperAdmin, isAdmin } = useAuth()
+    const { isAuthenticated, isSuperAdmin, isAdmin } = useAuth()
 
     // Update internal state when user prop changes
     if (user && role !== user.role && !open) {
@@ -48,8 +48,8 @@ export function ChangeRoleDialog({ user, open, onOpenChange, onRoleChanged }: Ch
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
                 },
+                credentials: 'include',
                 body: JSON.stringify({ role }),
             })
 
