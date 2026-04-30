@@ -136,7 +136,7 @@ export function BoardFiltersBar({ filters, onFiltersChange, assignees }: BoardFi
                                     <SelectItem value="BUG">🐛 Bug</SelectItem>
                                     <SelectItem value="TASK">📋 Task</SelectItem>
                                     <SelectItem value="RESEARCH">🔍 Research</SelectItem>
-                                    <SelectItem value="LEGAL_REVIEW">⚖️ Legal Review</SelectItem>
+                                    <SelectItem value="LEGAL_REVIEW">✅ Formal / stakeholder review</SelectItem>
                                     <SelectItem value="CLIENT_INTAKE">📝 Client Intake</SelectItem>
                                 </SelectContent>
                             </Select>

@@ -8,7 +8,7 @@ const APP_ORIGIN =
 
 export const metadata: Metadata = {
   title: `Terms of Service — ${APP_DISPLAY_NAME}`,
-  description: `Terms of Service for ${APP_DISPLAY_NAME}, a project management product operated by OctaVertex Media.`,
+  description: `Terms of Service for ${APP_DISPLAY_NAME}, OctaVertex Media's internal project management product for software delivery teams.`,
 }
 
 export default function TermsOfServicePage() {
@@ -35,10 +35,10 @@ export default function TermsOfServicePage() {
 
       <h2>2. The Service</h2>
       <p>
-        {APP_DISPLAY_NAME} provides project management features such as boards, tasks,
-        collaboration tools, and related functionality. We may modify, suspend, or discontinue
-        features with reasonable notice where practicable. We do not guarantee uninterrupted or
-        error-free operation.
+        {APP_DISPLAY_NAME} provides project management for software delivery: boards, tasks,
+        meetings, knowledge sharing, and client-visible status where enabled. We may modify,
+        suspend, or discontinue features with reasonable notice where practicable. We do not
+        guarantee uninterrupted or error-free operation.
       </p>
 
       <h2>3. Authentication</h2>

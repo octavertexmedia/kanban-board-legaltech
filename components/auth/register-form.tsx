@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2 } from "lucide-react"
+import { APP_DISPLAY_NAME } from "@/lib/brand"
 
 export function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false)
@@ -33,7 +34,7 @@ export function RegisterForm() {
         <div className="flex justify-center mb-4">
           <div className="flex items-center space-x-2">
             <div className="h-8 w-8 rounded-full bg-[#2962FF]"></div>
-            <span className="text-xl font-bold">Cengineers Kanban</span>
+            <span className="text-xl font-bold">{APP_DISPLAY_NAME}</span>
           </div>
         </div>
         <CardTitle className="text-2xl text-center">Create an account</CardTitle>

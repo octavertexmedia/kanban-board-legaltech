@@ -9,7 +9,7 @@ const APP_ORIGIN =
 
 export const metadata: Metadata = {
   title: `Privacy Policy — ${APP_DISPLAY_NAME}`,
-  description: `Privacy Policy for ${APP_DISPLAY_NAME}: how we collect, use, and protect information.`,
+  description: `Privacy Policy for ${APP_DISPLAY_NAME} (OctaVertex Media): how we collect, use, and protect information.`,
 }
 
 export default function PrivacyPolicyPage() {

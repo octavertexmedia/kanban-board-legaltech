@@ -4,7 +4,7 @@ export const users: User[] = [
   {
     id: "user-1",
     name: "John Doe",
-    email: "john.doe@cengineers.com",
+    email: "john.doe@octavertexmedia.demo",
     role: "manager",
     status: "active",
     lastActive: "Just now",
@@ -13,7 +13,7 @@ export const users: User[] = [
   {
     id: "user-2",
     name: "Jane Smith",
-    email: "jane.smith@cengineers.com",
+    email: "jane.smith@octavertexmedia.demo",
     role: "engineer",
     status: "active",
     lastActive: "5 minutes ago",
@@ -22,7 +22,7 @@ export const users: User[] = [
   {
     id: "user-3",
     name: "Alex Johnson",
-    email: "alex.johnson@cengineers.com",
+    email: "alex.johnson@octavertexmedia.demo",
     role: "designer",
     status: "active",
     lastActive: "1 hour ago",
@@ -31,7 +31,7 @@ export const users: User[] = [
   {
     id: "user-4",
     name: "Sarah Williams",
-    email: "sarah.williams@cengineers.com",
+    email: "sarah.williams@octavertexmedia.demo",
     role: "researcher",
     status: "inactive",
     lastActive: "2 days ago",
@@ -40,7 +40,7 @@ export const users: User[] = [
   {
     id: "user-5",
     name: "Michael Brown",
-    email: "michael.brown@cengineers.com",
+    email: "michael.brown@octavertexmedia.demo",
     role: "engineer",
     status: "active",
     lastActive: "3 hours ago",
@@ -288,10 +288,10 @@ export const initialKnowledgeArticles: KnowledgeArticle[] = [
   },
   {
     id: "article-2",
-    title: "Best Practices for Legal Documentation",
-    content: "## Legal Documentation Best Practices\n\nWhen preparing legal documents, it's essential to follow these guidelines...",
+    title: "Technical documentation standards",
+    content: "## Technical documentation standards\n\nClear specs, ADRs, and runbooks help OctaVertex Media ship reliably and onboard engineers faster...",
     category: "Documentation",
-    tags: ["legal", "documentation", "best-practices"],
+    tags: ["engineering", "documentation", "best-practices"],
     author: users[3],
     createdAt: "2023-11-15T08:30:00Z",
     updatedAt: "2023-12-05T09:15:00Z",
@@ -299,10 +299,10 @@ export const initialKnowledgeArticles: KnowledgeArticle[] = [
   },
   {
     id: "article-3",
-    title: "Using AI for Case Research",
-    content: "## AI-Powered Legal Research\n\nArtificial intelligence tools can significantly streamline the research process...",
+    title: "Using AI in engineering workflows",
+    content: "## AI-assisted development\n\nPractical ways to use AI for code review prep, test ideas, and research — with human ownership of outcomes...",
     category: "Technology",
-    tags: ["ai", "research", "legal-tech"],
+    tags: ["ai", "engineering", "productivity"],
     author: users[4],
     createdAt: "2023-11-20T11:45:00Z",
     updatedAt: "2023-12-07T16:10:00Z",
@@ -315,7 +315,7 @@ export const knowledgeCategories = [
   "Documentation",
   "Technology",
   "Case Studies",
-  "Legal Resources",
+  "Engineering playbooks",
   "Tutorials",
   "Best Practices",
 ]

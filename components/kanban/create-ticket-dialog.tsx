@@ -170,7 +170,7 @@ export function CreateTicketDialog({
                     <SelectItem value="BUG">Bug</SelectItem>
                     <SelectItem value="FEATURE">Feature</SelectItem>
                     <SelectItem value="RESEARCH">Research</SelectItem>
-                    <SelectItem value="LEGAL_REVIEW">Legal Review</SelectItem>
+                    <SelectItem value="LEGAL_REVIEW">Formal / stakeholder review</SelectItem>
                     <SelectItem value="CLIENT_INTAKE">Client Intake</SelectItem>
                   </SelectContent>
                 </Select>

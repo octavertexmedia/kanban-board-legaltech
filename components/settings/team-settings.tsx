@@ -295,12 +295,12 @@ export function TeamSettings() {
           <div className="grid gap-4">
             <div className="space-y-2">
               <Label htmlFor="team-name">Team Name</Label>
-              <Input id="team-name" defaultValue="Legal Tech Team" />
+              <Input id="team-name" defaultValue="OctaVertex Media — Delivery" />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="team-domain">Team Domain</Label>
-              <Input id="team-domain" defaultValue="legaltech.cengineers.com" />
+              <Input id="team-domain" defaultValue="team.octavertexmedia.com" />
             </div>
 
             <div className="grid grid-cols-2 gap-4">

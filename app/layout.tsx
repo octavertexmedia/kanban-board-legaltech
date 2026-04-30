@@ -4,7 +4,7 @@ import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/lib/auth-context"
 import { Toaster } from "sonner"
-import { APP_DISPLAY_NAME, OCTAVERTEX_MARKETING_URL } from "@/lib/brand"
+import { APP_COMPANY_NAME, APP_DISPLAY_NAME, OCTAVERTEX_MARKETING_URL } from "@/lib/brand"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -27,7 +27,7 @@ export const metadata = {
   ),
   openGraph: {
     title: APP_DISPLAY_NAME,
-    description: "Internal and client project tracking for OctaVertex Media",
+    description: `Delivery and client project tracking for ${APP_COMPANY_NAME} engineering teams`,
     type: "website",
     url: process.env.NEXT_PUBLIC_APP_URL || "https://kanban.vertexcrm.in",
   },

@@ -24,7 +24,7 @@ export function AccountSettings() {
     name: users[0].name,
     email: users[0].email,
     username: "johndoe",
-    bio: "Legal tech enthusiast with expertise in contract automation and knowledge management.",
+    bio: "Software engineer at OctaVertex Media — shipping products and improving how we deliver.",
     website: "https://example.com",
     avatar: users[0].avatar || "/placeholder.svg"
   })

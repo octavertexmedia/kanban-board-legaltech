@@ -139,7 +139,7 @@ export function InviteUserDialog({ open, onOpenChange, onUserCreated }: InviteUs
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="john@cengineers.com"
+                placeholder="name@octavertexmedia.com"
                 required
               />
             </div>

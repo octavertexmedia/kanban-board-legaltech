@@ -20,6 +20,10 @@ import { Badge } from "@/components/ui/badge"
 import { Clipboard, Check, Braces, Code } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+const API_DOC_EXAMPLE_ORIGIN = (
+  process.env.NEXT_PUBLIC_APP_URL || "https://kanban.vertexcrm.in"
+).replace(/\/$/, "")
+
 export function ApiSection() {
   const [copiedEndpoint, setCopiedEndpoint] = useState("")
 
@@ -597,17 +601,17 @@ export function ApiSection() {
           ],
           response: `{
   "id": "article-19",
-  "title": "Legal Document Automation",
-  "content": "# Legal Document Automation\\n\\nThis guide explains...",
-  "contentHtml": "<h1>Legal Document Automation</h1><p>This guide explains...</p>",
-  "summary": "Guide to automating legal document workflows",
-  "category": "Legal Tech",
+  "title": "API design guidelines",
+  "content": "# API design guidelines\\n\\nThis guide explains...",
+  "contentHtml": "<h1>API design guidelines</h1><p>This guide explains...</p>",
+  "summary": "REST and versioning conventions for OctaVertex Media services",
+  "category": "Engineering",
   "author": {
     "id": "user-1",
     "name": "John Doe",
     "email": "john@example.com"
   },
-  "tags": ["legal-tech", "automation", "documents"],
+  "tags": ["api", "engineering", "documentation"],
   "createdAt": "2023-12-15T10:30:00Z",
   "updatedAt": "2023-12-15T10:30:00Z",
   "views": 0,
@@ -629,17 +633,17 @@ export function ApiSection() {
           ],
           response: `{
   "id": "article-19",
-  "title": "Legal Document Automation Best Practices",
-  "content": "# Legal Document Automation Best Practices\\n\\nThis updated guide explains...",
-  "contentHtml": "<h1>Legal Document Automation Best Practices</h1><p>This updated guide explains...</p>",
-  "summary": "Comprehensive guide to automating legal document workflows",
-  "category": "Legal Tech",
+  "title": "API design guidelines — revision history",
+  "content": "# API design guidelines — revision history\\n\\nThis updated guide explains...",
+  "contentHtml": "<h1>API design guidelines — revision history</h1><p>This updated guide explains...</p>",
+  "summary": "How we document breaking changes and deprecations",
+  "category": "Engineering",
   "author": {
     "id": "user-1",
     "name": "John Doe",
     "email": "john@example.com"
   },
-  "tags": ["legal-tech", "automation", "documents", "best-practices"],
+  "tags": ["api", "engineering", "documentation", "best-practices"],
   "createdAt": "2023-12-15T10:30:00Z",
   "updatedAt": "2023-12-16T09:15:00Z",
   "views": 5
@@ -681,7 +685,7 @@ export function ApiSection() {
                 <CardTitle className="text-base">Base URL</CardTitle>
               </CardHeader>
               <CardContent>
-                <code className="text-sm">https://api.cengineers-kanban.com</code>
+                <code className="text-sm">{API_DOC_EXAMPLE_ORIGIN}</code>
               </CardContent>
             </Card>
 
@@ -794,7 +798,7 @@ export function ApiSection() {
                           <TabsContent value="code">
                             <pre className="bg-muted p-4 rounded-lg overflow-auto text-xs">
                               <code>{`// Example Request with fetch
-const response = await fetch("https://api.cengineers-kanban.com${endpoint.path.replace(/{([^}]+)}/g, (_, p1) => `/${p1}Value`)}", {
+const response = await fetch("${API_DOC_EXAMPLE_ORIGIN}${endpoint.path.replace(/{([^}]+)}/g, (_, p1) => `/${p1}Value`)}", {
   method: "${endpoint.method}",
   headers: {
     "Content-Type": "application/json",

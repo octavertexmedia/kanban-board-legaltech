@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
+import { APP_DISPLAY_NAME } from "@/lib/brand"
 
 export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
@@ -32,7 +33,7 @@ export function LoginForm() {
         <div className="flex justify-center mb-4">
           <div className="flex items-center space-x-2">
             <div className="h-8 w-8 rounded-full bg-[#2962FF]"></div>
-            <span className="text-xl font-bold">Cengineers Kanban</span>
+            <span className="text-xl font-bold">{APP_DISPLAY_NAME}</span>
           </div>
         </div>
         <CardTitle className="text-2xl text-center">Sign in</CardTitle>

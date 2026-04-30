@@ -31,9 +31,9 @@ export default function DocsPage() {
     <PageShell noPadding>
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 py-12 px-4 md:px-6">
         <div className="max-w-5xl mx-auto text-white">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">Cengineers Kanban API</h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-4">Vertex PM API</h1>
           <p className="text-lg opacity-90">
-            Complete API reference for integrating with our legal project management platform
+            REST reference for integrating with OctaVertex Media&apos;s project management platform
           </p>
         </div>
       </div>

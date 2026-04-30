@@ -49,7 +49,7 @@ export function OctaVertexLoginFooter() {
         </a>
         <nav
           className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground md:text-sm"
-          aria-label="Legal"
+          aria-label="Policies"
         >
           <Link href="/legal/terms" className="hover:text-foreground underline-offset-4 hover:underline">
             Terms

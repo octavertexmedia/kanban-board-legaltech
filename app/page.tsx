@@ -79,14 +79,14 @@ export default function HomePage() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
               </span>
-              <span className="text-xs font-bold uppercase tracking-wider">Legal Team Dashboard</span>
+              <span className="text-xs font-bold uppercase tracking-wider">Engineering & delivery</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-extrabold mb-4 tracking-tight text-foreground">
               Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-violet-500">{firstName}</span> 👋
             </h1>
             <p className="text-lg text-muted-foreground mb-8 max-w-2xl leading-relaxed">
-              Streamline your legal team's workflow with powerful project management,
-              knowledge sharing, and collaboration tools.
+              Plan releases, track work across teams, and keep clients in the loop — built for OctaVertex
+              Media&apos;s software delivery.
             </p>
             <div className="flex flex-col sm:flex-row items-center gap-4">
               <div className="w-full sm:w-[400px]">

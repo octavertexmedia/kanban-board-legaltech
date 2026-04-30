@@ -53,7 +53,7 @@ async function main() {
         prisma.user.create({
             data: {
                 name: 'Admin User',
-                email: 'admin@cengineers.com',
+                email: 'admin@octavertexmedia.demo',
                 password: hashedPasswords.admin,
                 role: Role.ADMIN,
                 userKind: UserKind.INTERNAL,
@@ -64,7 +64,7 @@ async function main() {
         prisma.user.create({
             data: {
                 name: 'John Doe',
-                email: 'john.doe@cengineers.com',
+                email: 'john.doe@octavertexmedia.demo',
                 password: hashedPasswords.manager,
                 role: Role.MANAGER,
                 userKind: UserKind.INTERNAL,
@@ -75,7 +75,7 @@ async function main() {
         prisma.user.create({
             data: {
                 name: 'Jane Smith',
-                email: 'jane.smith@cengineers.com',
+                email: 'jane.smith@octavertexmedia.demo',
                 password: hashedPasswords.engineer,
                 role: Role.ENGINEER,
                 userKind: UserKind.INTERNAL,
@@ -86,7 +86,7 @@ async function main() {
         prisma.user.create({
             data: {
                 name: 'Alex Johnson',
-                email: 'alex.johnson@cengineers.com',
+                email: 'alex.johnson@octavertexmedia.demo',
                 password: hashedPasswords.designer,
                 role: Role.DESIGNER,
                 userKind: UserKind.INTERNAL,
@@ -97,7 +97,7 @@ async function main() {
         prisma.user.create({
             data: {
                 name: 'Sarah Williams',
-                email: 'sarah.williams@cengineers.com',
+                email: 'sarah.williams@octavertexmedia.demo',
                 password: hashedPasswords.researcher,
                 role: Role.RESEARCHER,
                 userKind: UserKind.INTERNAL,
@@ -108,7 +108,7 @@ async function main() {
         prisma.user.create({
             data: {
                 name: 'Michael Brown',
-                email: 'michael.brown@cengineers.com',
+                email: 'michael.brown@octavertexmedia.demo',
                 password: hashedPasswords.engineer,
                 role: Role.ENGINEER,
                 userKind: UserKind.INTERNAL,
@@ -136,7 +136,7 @@ async function main() {
         prisma.label.create({ data: { name: 'frontend', color: '#3b82f6' } }),
         prisma.label.create({ data: { name: 'backend', color: '#10b981' } }),
         prisma.label.create({ data: { name: 'design', color: '#f59e0b' } }),
-        prisma.label.create({ data: { name: 'legal', color: '#8b5cf6' } }),
+        prisma.label.create({ data: { name: 'compliance', color: '#8b5cf6' } }),
         prisma.label.create({ data: { name: 'urgent', color: '#ef4444' } }),
         prisma.label.create({ data: { name: 'documentation', color: '#6366f1' } }),
         prisma.label.create({ data: { name: 'research', color: '#14b8a6' } }),
@@ -163,7 +163,7 @@ async function main() {
     const project2 = await prisma.project.create({
         data: {
             name: 'Client Portal Development',
-            description: 'Build a secure client-facing portal for case tracking and document sharing',
+            description: 'Build a secure client-facing portal for delivery status, files, and collaboration',
             status: ProjectStatus.ACTIVE,
             members: {
                 create: [
@@ -205,7 +205,7 @@ async function main() {
                 projectId: project2.id,
                 authorId: users[1].id,
                 title: 'Internal: vendor shortlist',
-                body: 'Evaluating two e-signature vendors — not shared externally until legal signs off.',
+                body: 'Evaluating two e-signature vendors — internal only until delivery lead approves sharing.',
                 visibility: StatusUpdateVisibility.INTERNAL,
             },
             {
@@ -396,7 +396,7 @@ async function main() {
         prisma.ticket.create({
             data: {
                 title: 'Design client dashboard wireframes',
-                description: 'Create wireframes for the client-facing dashboard showing case progress.',
+                description: 'Create wireframes for the client-facing dashboard showing project progress.',
                 type: TicketType.TASK,
                 priority: Priority.HIGH,
                 dueDate: new Date('2026-03-05'),
@@ -410,7 +410,7 @@ async function main() {
         prisma.ticket.create({
             data: {
                 title: 'Implement document upload & sharing',
-                description: 'Build secure file upload and sharing system for legal documents with access controls.',
+                description: 'Build secure file upload and sharing with role-based access for client deliverables.',
                 type: TicketType.FEATURE,
                 priority: Priority.HIGH,
                 dueDate: new Date('2026-03-18'),
@@ -424,7 +424,7 @@ async function main() {
         prisma.ticket.create({
             data: {
                 title: 'Set up client notification system',
-                description: 'Implement email and in-app notifications for case updates sent to clients.',
+                description: 'Implement email and in-app notifications for project updates sent to clients.',
                 type: TicketType.FEATURE,
                 priority: Priority.MEDIUM,
                 dueDate: new Date('2026-03-22'),
@@ -513,36 +513,36 @@ async function main() {
         prisma.knowledgeArticle.create({
             data: {
                 title: 'Getting Started with Kanban Methodology',
-                content: `# Getting Started with Kanban\n\nKanban is a visual workflow management method that helps teams visualize work, limit work-in-progress, and maximize efficiency.\n\n## Key Principles\n\n1. **Visualize the workflow** — Use a board with columns representing each stage\n2. **Limit WIP** — Set limits on how many items can be in each stage\n3. **Manage flow** — Monitor and optimize the flow of work\n4. **Make policies explicit** — Define clear rules for each stage\n5. **Implement feedback loops** — Regular standups and reviews\n6. **Improve collaboratively** — Use data to drive continuous improvement\n\n## Benefits for Legal Teams\n\n- Track case progress visually\n- Identify bottlenecks in workflows\n- Improve team communication\n- Meet deadlines more consistently`,
+                content: `# Getting Started with Kanban\n\nKanban is a visual workflow management method that helps teams visualize work, limit work-in-progress, and maximize efficiency.\n\n## Key Principles\n\n1. **Visualize the workflow** — Use a board with columns representing each stage\n2. **Limit WIP** — Set limits on how many items can be in each stage\n3. **Manage flow** — Monitor and optimize the flow of work\n4. **Make policies explicit** — Define clear rules for each stage\n5. **Implement feedback loops** — Regular standups and reviews\n6. **Improve collaboratively** — Use data to drive continuous improvement\n\n## Benefits for software teams\n\n- See delivery flow end to end\n- Spot bottlenecks before deadlines slip\n- Align engineering, design, and stakeholders\n- Ship increments with predictable cadence`,
                 category: 'Methodology',
-                tags: ['kanban', 'agile', 'workflow', 'legal-tech'],
+                tags: ['kanban', 'agile', 'workflow', 'engineering'],
                 views: 127,
                 authorId: users[1].id,
             },
         }),
         prisma.knowledgeArticle.create({
             data: {
-                title: 'Best Practices for Legal Document Management',
-                content: `# Legal Document Management\n\nEffective document management is critical for legal teams.\n\n## Document Naming Conventions\n\nUse the format: \`[ClientCode]-[CaseType]-[DocType]-[Version]\`\n\nExamples:\n- \`ACME-LIT-BRIEF-v2.1\`\n- \`JONES-CORP-NDA-v1.0\`\n\n## Version Control\n\n- Always create a new version, never overwrite\n- Lock documents during editing\n- Track all changes with audit trails\n\n## Security\n\n- Encrypt sensitive documents at rest\n- Use role-based access control\n- Implement watermarking for sensitive docs`,
+                title: 'Technical documentation standards',
+                content: `# Technical documentation standards\n\nGood docs keep OctaVertex Media shipping fast.\n\n## Naming and structure\n\n- Use clear titles: purpose first, audience second\n- Prefer ADRs for significant technical decisions\n- Link to code, tickets, and designs from the doc\n\n## Version control\n\n- Store docs with the repo or in the knowledge base with owners\n- Review changes like code during critical releases\n\n## Security\n\n- Do not paste secrets into articles\n- Use role-based visibility for client-facing spaces`,
                 category: 'Documentation',
-                tags: ['legal', 'document-management', 'best-practices'],
+                tags: ['engineering', 'documentation', 'best-practices'],
                 views: 89,
                 authorId: users[4].id,
             },
         }),
         prisma.knowledgeArticle.create({
             data: {
-                title: 'Using AI for Case Research',
-                content: `# AI-Powered Case Research\n\nAI tools can dramatically accelerate legal research.\n\n## Tools & Techniques\n\n- **Vector search** for finding similar precedents\n- **NLP** for contract analysis and clause extraction\n- **Summarization** for lengthy court opinions\n\n## Implementation\n\n1. Index your case database\n2. Train embeddings on your domain\n3. Build a retrieval pipeline\n4. Add human-in-the-loop review`,
+                title: 'Using AI in engineering workflows',
+                content: `# AI-assisted engineering\n\nAI can speed up research, drafting, and review — with humans accountable for outcomes.\n\n## Practical uses\n\n- **Exploration** — summarize long threads or specs\n- **Test ideas** — generate cases to consider, then narrow manually\n- **Code context** — accelerate boilerplate; review every change\n\n## Guardrails\n\n1. No secrets or PII in prompts\n2. Verify outputs against source systems\n3. Keep audit-friendly notes for client-facing work`,
                 category: 'Technology',
-                tags: ['ai', 'research', 'legal-tech'],
+                tags: ['ai', 'engineering', 'productivity'],
                 views: 214,
                 authorId: users[4].id,
             },
         }),
         prisma.knowledgeArticle.create({
             data: {
-                title: 'API Integration Guide for Cengineers Platform',
+                title: 'API integration guide for Vertex PM',
                 content: `# API Integration Guide\n\n## Authentication\n\nAll API calls require a Bearer token:\n\n\`\`\`\nAuthorization: Bearer <your-token>\n\`\`\`\n\n## Endpoints\n\n- \`GET /api/tickets\` — List tickets\n- \`POST /api/tickets\` — Create ticket\n- \`PATCH /api/tickets/:id\` — Update ticket\n\n## Rate Limits\n\n- 100 requests per minute per user\n- 1000 requests per hour per user`,
                 category: 'Technology',
                 tags: ['api', 'integration', 'developer'],
@@ -632,12 +632,12 @@ async function main() {
     console.log('\n🎉 Database seeded successfully!')
     console.log('\n📋 Employee Credentials:')
     console.log('─────────────────────────────────────────')
-    console.log('Admin:      admin@cengineers.com       / Admin@2026')
-    console.log('Manager:    john.doe@cengineers.com     / Manager@2026')
-    console.log('Engineer:   jane.smith@cengineers.com   / Engineer@2026')
-    console.log('Designer:   alex.johnson@cengineers.com / Designer@2026')
-    console.log('Researcher: sarah.williams@cengineers.com / Researcher@2026')
-    console.log('Engineer:   michael.brown@cengineers.com / Engineer@2026')
+    console.log('Admin:      admin@octavertexmedia.demo       / Admin@2026')
+    console.log('Manager:    john.doe@octavertexmedia.demo     / Manager@2026')
+    console.log('Engineer:   jane.smith@octavertexmedia.demo   / Engineer@2026')
+    console.log('Designer:   alex.johnson@octavertexmedia.demo / Designer@2026')
+    console.log('Researcher: sarah.williams@octavertexmedia.demo / Researcher@2026')
+    console.log('Engineer:   michael.brown@octavertexmedia.demo / Engineer@2026')
     console.log('Client:     client@acmecorp.demo          / Client@2026  (Client Portal Development)')
 }
 

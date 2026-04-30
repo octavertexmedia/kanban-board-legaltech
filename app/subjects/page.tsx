@@ -41,41 +41,41 @@ export default function SubjectsPage() {
       const mockSubjects: Subject[] = [
         {
           id: "subject-1",
-          name: "Contract Law",
-          description: "Legal principles and regulations governing agreements and contracts between parties.",
-          category: "Legal",
+          name: "Web platform engineering",
+          description: "Frontend and backend patterns, frameworks, and delivery standards for customer-facing products.",
+          category: "Engineering",
           documentCount: 24,
           createdAt: "2023-10-15T08:30:00Z"
         },
         {
           id: "subject-2",
-          name: "Intellectual Property",
-          description: "Patents, trademarks, copyrights, and other legal protections for creative works and inventions.",
-          category: "Legal",
+          name: "DevOps & reliability",
+          description: "CI/CD, observability, infrastructure, and practices that keep releases safe and predictable.",
+          category: "Engineering",
           documentCount: 18,
           createdAt: "2023-10-20T14:45:00Z"
         },
         {
           id: "subject-3",
-          name: "Employment Law",
-          description: "Legal standards and practices governing employer-employee relationships and workplace regulations.",
-          category: "Legal",
+          name: "Product & delivery",
+          description: "Roadmaps, milestones, estimation, and stakeholder communication for software projects.",
+          category: "Delivery",
           documentCount: 15,
           createdAt: "2023-11-02T11:15:00Z"
         },
         {
           id: "subject-4",
-          name: "Legal Research Methodology",
-          description: "Research methods and approaches specific to legal documentation and case findings.",
+          name: "Research & discovery",
+          description: "Spikes, prototypes, and technical investigations before committing to build.",
           category: "Research",
           documentCount: 10,
           createdAt: "2023-11-10T09:20:00Z"
         },
         {
           id: "subject-5",
-          name: "Legal Tech Tools",
-          description: "Software and technology solutions specifically designed for legal practice management.",
-          category: "Technology",
+          name: "Client collaboration",
+          description: "How we share progress, gather feedback, and align with clients without slowing engineering down.",
+          category: "Delivery",
           documentCount: 8,
           createdAt: "2023-11-22T16:40:00Z"
         }
@@ -105,7 +105,7 @@ export default function SubjectsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Subject Areas</h1>
           <p className="text-muted-foreground">
-            Browse and manage legal subject areas
+            Browse knowledge areas for OctaVertex Media delivery teams
           </p>
         </div>
 
