@@ -1,18 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getAuthFromRequest } from '@/lib/api-middleware'
+import { requireAuth } from '@/lib/api-middleware'
+import { getAccessibleProjectIds } from '@/lib/project-access'
+import { isClientAuth } from '@/lib/auth'
+import { ProjectMemberRole } from '@prisma/client'
 
 // GET /api/projects — List projects
 export async function GET(req: NextRequest) {
     try {
-        const auth = await import('@/lib/api-middleware').then(m => m.requireAuth(req as any));
-        if (auth instanceof NextResponse) return auth;
+        const auth = requireAuth(req)
+        if (auth instanceof NextResponse) return auth
 
         const { searchParams } = new URL(req.url)
         const search = searchParams.get('search')
         const status = searchParams.get('status')
 
-        const where: any = {}
+        const accessibleIds = await getAccessibleProjectIds(prisma, auth)
+        if (accessibleIds.length === 0) {
+            return NextResponse.json({ projects: [] })
+        }
+
+        const where: any = {
+            id: { in: accessibleIds },
+        }
         if (status) where.status = status.toUpperCase()
         if (search) {
             where.OR = [
@@ -72,7 +82,12 @@ export async function GET(req: NextRequest) {
 // POST /api/projects — Create project
 export async function POST(req: NextRequest) {
     try {
-        const auth = getAuthFromRequest(req)
+        const auth = requireAuth(req)
+        if (auth instanceof NextResponse) return auth
+        if (isClientAuth(auth)) {
+            return NextResponse.json({ error: 'Forbidden — clients cannot create projects' }, { status: 403 })
+        }
+
         const { name, description, memberIds } = await req.json()
 
         if (!name) {
@@ -89,8 +104,8 @@ export async function POST(req: NextRequest) {
                 description: description || '',
                 members: {
                     create: [
-                        ...(auth ? [{ userId: auth.userId, role: 'owner' }] : []),
-                        ...uniqueMemberIds.map((id: string) => ({ userId: id, role: 'member' })),
+                        { userId: auth.userId, role: ProjectMemberRole.OWNER },
+                        ...uniqueMemberIds.map((id: string) => ({ userId: id, role: ProjectMemberRole.MEMBER })),
                     ],
                 },
                 board: {

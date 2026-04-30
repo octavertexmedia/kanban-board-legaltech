@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { getAuthFromRequest } from '@/lib/api-middleware'
+import { isClientAuth } from '@/lib/auth'
 
 // GET /api/users/[id] — Fetch specific user details
 export async function GET(
@@ -22,6 +23,7 @@ export async function GET(
                 name: true,
                 email: true,
                 role: true,
+                userKind: true,
                 status: true,
                 avatar: true,
                 createdAt: true,
@@ -49,6 +51,10 @@ export async function GET(
             return NextResponse.json({ error: 'User not found' }, { status: 404 })
         }
 
+        if (isClientAuth(auth) && id !== auth.userId) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        }
+
         return NextResponse.json({ user })
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 })
@@ -67,6 +73,11 @@ export async function PATCH(
         if (!auth) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
+        if (isClientAuth(auth)) {
+            if (auth.userId !== id) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+            }
+        }
 
         const body = await req.json()
         const { status, role, name, avatar } = body
@@ -78,6 +89,9 @@ export async function PATCH(
 
         // Role/Status changes require Admin access
         if (status || role) {
+            if (isClientAuth(auth)) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+            }
             if (auth.role !== 'ADMIN' && auth.role !== 'SUPER_ADMIN') {
                 return NextResponse.json({ error: 'Forbidden — Admin access required to change role/status' }, { status: 403 })
             }
@@ -129,6 +143,7 @@ export async function PATCH(
                 name: true,
                 email: true,
                 role: true,
+                userKind: true,
                 status: true,
                 avatar: true,
             },
@@ -161,6 +176,9 @@ export async function DELETE(
 
         if (!auth) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        if (isClientAuth(auth)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
 
         if (auth.role !== 'SUPER_ADMIN') {

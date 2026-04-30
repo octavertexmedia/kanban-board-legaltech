@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getAuthFromRequest } from '@/lib/api-middleware'
+import { requireAuth } from '@/lib/api-middleware'
+import { getAccessibleProjectIds, canAccessProject } from '@/lib/project-access'
+import { isClientAuth } from '@/lib/auth'
 
 // GET /api/tickets — List tickets with filters
 export async function GET(req: NextRequest) {
     try {
+        const auth = requireAuth(req)
+        if (auth instanceof NextResponse) return auth
+
+        const accessibleIds = await getAccessibleProjectIds(prisma, auth)
+
         const { searchParams } = new URL(req.url)
         const projectId = searchParams.get('projectId')
         const columnId = searchParams.get('columnId')
@@ -15,7 +22,9 @@ export async function GET(req: NextRequest) {
         const page = parseInt(searchParams.get('page') || '1')
         const limit = parseInt(searchParams.get('limit') || '50')
 
-        const where: any = {}
+        const where: any = {
+            column: { board: { projectId: { in: accessibleIds.length ? accessibleIds : ['__none__'] } } },
+        }
 
         if (columnId) where.columnId = columnId
         if (assigneeId) where.assigneeId = assigneeId
@@ -23,6 +32,10 @@ export async function GET(req: NextRequest) {
         if (type) where.type = type.toUpperCase()
 
         if (projectId) {
+            const ok = await canAccessProject(prisma, auth, projectId)
+            if (!ok) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+            }
             where.column = { board: { projectId } }
         }
 
@@ -63,7 +76,12 @@ export async function GET(req: NextRequest) {
 // POST /api/tickets — Create ticket
 export async function POST(req: NextRequest) {
     try {
-        const auth = getAuthFromRequest(req)
+        const auth = requireAuth(req)
+        if (auth instanceof NextResponse) return auth
+        if (isClientAuth(auth)) {
+            return NextResponse.json({ error: 'Forbidden — clients cannot create tickets' }, { status: 403 })
+        }
+
         const body = await req.json()
 
         const { title, description, type, priority, dueDate, columnId, assigneeId, labelIds } = body
@@ -73,6 +91,17 @@ export async function POST(req: NextRequest) {
                 { error: 'Title and columnId are required' },
                 { status: 400 }
             )
+        }
+
+        const col = await prisma.column.findUnique({
+            where: { id: columnId },
+            select: {
+                board: { select: { projectId: true } },
+            },
+        })
+        const pid = col?.board?.projectId
+        if (!pid || !(await canAccessProject(prisma, auth, pid))) {
+            return NextResponse.json({ error: 'Forbidden or invalid column' }, { status: 403 })
         }
 
         // Get max position in column
@@ -92,7 +121,7 @@ export async function POST(req: NextRequest) {
                 position: (maxPos?.position ?? -1) + 1,
                 columnId,
                 assigneeId: assigneeId || null,
-                creatorId: auth?.userId || null,
+                creatorId: auth.userId,
                 labels: labelIds?.length
                     ? { create: labelIds.map((id: string) => ({ labelId: id })) }
                     : undefined,

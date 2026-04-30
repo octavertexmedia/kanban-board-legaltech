@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getAuthFromRequest } from '@/lib/api-middleware'
+import { requireAuth } from '@/lib/api-middleware'
+import { isClientAuth } from '@/lib/auth'
 
 // GET /api/articles
 export async function GET(req: NextRequest) {
     try {
+        const auth = requireAuth(req)
+        if (auth instanceof NextResponse) return auth
+        if (isClientAuth(auth)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        }
+
         const { searchParams } = new URL(req.url)
         const search = searchParams.get('search')
         const category = searchParams.get('category')
@@ -36,7 +43,12 @@ export async function GET(req: NextRequest) {
 // POST /api/articles
 export async function POST(req: NextRequest) {
     try {
-        const auth = getAuthFromRequest(req)
+        const auth = requireAuth(req)
+        if (auth instanceof NextResponse) return auth
+        if (isClientAuth(auth)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        }
+
         const body = await req.json()
 
         if (!body.title || !body.content) {
@@ -49,7 +61,7 @@ export async function POST(req: NextRequest) {
                 content: body.content,
                 category: body.category || 'General',
                 tags: body.tags || [],
-                authorId: auth?.userId || '',
+                authorId: auth.userId,
             },
             include: {
                 author: { select: { id: true, name: true, avatar: true } },

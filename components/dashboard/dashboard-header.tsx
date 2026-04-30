@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
@@ -25,11 +24,13 @@ import { useState } from "react"
 import { useTheme } from "next-themes"
 import { motion } from "framer-motion"
 import { useAuth } from "@/lib/auth-context"
+import { OctaVertexNavbarBrand } from "@/components/brand/octavertex-brand"
+import { ClientPortalHeaderActions } from "@/components/client/client-portal-header-actions"
 
 export function DashboardHeader() {
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
-  const { user, logout, isAdmin, isManager, isSuperAdmin } = useAuth()
+  const { user, logout, isAdmin, isManager, isSuperAdmin, isClientUser } = useAuth()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const canSeeTeam = isAdmin || isManager || isSuperAdmin
@@ -67,6 +68,23 @@ export function DashboardHeader() {
       .toUpperCase()
   }
 
+  if (isClientUser) {
+    return (
+      <header className="sticky top-0 z-50 flex h-14 items-center justify-between gap-4 border-b bg-background/95 backdrop-blur-md px-4 md:px-6">
+        <OctaVertexNavbarBrand />
+        <nav className="flex items-center gap-3 text-sm">
+          <Link href="/client" className="text-muted-foreground hover:text-foreground transition-colors">
+            My projects
+          </Link>
+          <Link href="/notifications" className="text-muted-foreground hover:text-foreground transition-colors">
+            Notifications
+          </Link>
+          <ClientPortalHeaderActions />
+        </nav>
+      </header>
+    )
+  }
+
   return (
     <motion.header
       initial={{ y: -8, opacity: 0 }}
@@ -85,10 +103,7 @@ export function DashboardHeader() {
         <SheetContent side="left" className="w-[280px] p-0" title="Navigation">
           <div className="flex flex-col h-full">
             <div className="p-5 border-b">
-              <Link href="/" className="flex items-center gap-2.5">
-                <Image src="/logo-premium.png" alt="LegalBoard Logo" width={32} height={32} className="rounded-md" />
-                <span className="font-bold text-lg gradient-text">LegalBoard</span>
-              </Link>
+              <OctaVertexNavbarBrand />
             </div>
             <nav className="flex-1 p-3 space-y-1">
               {navLinks.map((link) => {
@@ -125,13 +140,8 @@ export function DashboardHeader() {
         </SheetContent>
       </Sheet>
 
-      {/* Logo */}
-      <Link href="/" className="flex items-center gap-2.5 shrink-0">
-        <Image src="/logo-premium.png" alt="LegalBoard Logo" width={36} height={36} className="rounded-md shadow-sm" />
-        <span className="hidden lg:block font-bold text-lg tracking-tight">
-          <span className="gradient-text">LegalBoard</span>
-        </span>
-      </Link>
+      {/* Brand */}
+      <OctaVertexNavbarBrand />
 
       {/* Desktop nav */}
       <nav className="hidden md:flex items-center gap-1 ml-4">

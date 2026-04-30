@@ -16,6 +16,7 @@ model User {
   email     String   @unique
   password  String
   role      Role     @default(ENGINEER)
+  userKind  UserKind @default(INTERNAL)
   status    UserStatus @default(ACTIVE)
   avatar    String?
   preferences String?
@@ -33,10 +34,17 @@ model User {
   notifications     Notification[]
   projectMemberships ProjectMember[]
   activityLogs      ActivityLog[]
+  statusUpdatesAuthored ProjectStatusUpdate[] @relation("StatusUpdateAuthor")
 
   @@index([email])
   @@index([role])
   @@index([status])
+  @@index([userKind])
+}
+
+enum UserKind {
+  INTERNAL
+  CLIENT
 }
 
 enum Role {
@@ -65,24 +73,54 @@ model Project {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  board    Board?
-  members  ProjectMember[]
-  activities ActivityLog[]
+  board          Board?
+  members        ProjectMember[]
+  activities     ActivityLog[]
+  statusUpdates  ProjectStatusUpdate[]
 
   @@index([status])
 }
 
 model ProjectMember {
-  id        String  @id @default(cuid())
+  id        String            @id @default(cuid())
   projectId String
   userId    String
-  role      String  @default("member")
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      ProjectMemberRole @default(MEMBER)
+  project   Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, userId])
   @@index([projectId])
   @@index([userId])
+}
+
+enum ProjectMemberRole {
+  OWNER
+  MEMBER
+  CLIENT
+}
+
+model ProjectStatusUpdate {
+  id         String                 @id @default(cuid())
+  projectId  String
+  authorId   String
+  title      String
+  body       String
+  visibility StatusUpdateVisibility
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author  User    @relation("StatusUpdateAuthor", fields: [authorId], references: [id])
+
+  @@index([projectId])
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+enum StatusUpdateVisibility {
+  INTERNAL
+  CLIENT
 }
 
 enum ProjectStatus {

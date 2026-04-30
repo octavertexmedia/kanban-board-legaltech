@@ -8,6 +8,7 @@ interface User {
     name: string
     email: string
     role: string
+    userKind?: string
     avatar: string | null
     status: string
 }
@@ -17,7 +18,8 @@ interface AuthContextType {
     token: string | null
     isLoading: boolean
     isAuthenticated: boolean
-    login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+    isClientUser: boolean
+    login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: User }>
     logout: () => Promise<void>
     hasPermission: (permission: string) => boolean
     isManager: boolean
@@ -113,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(data.user)
             setToken(data.token)
             localStorage.setItem('auth-token', data.token)
-            return { success: true }
+            return { success: true, user: data.user }
         } catch (error: any) {
             return { success: false, error: error.message }
         }
@@ -139,6 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         token,
         isLoading,
         isAuthenticated: !!user,
+        isClientUser: user?.userKind === 'CLIENT',
         login,
         logout,
         hasPermission,

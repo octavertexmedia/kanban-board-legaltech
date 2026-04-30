@@ -1,4 +1,14 @@
-import { PrismaClient, Role, UserStatus, ProjectStatus, TicketType, Priority } from '@prisma/client'
+import {
+    PrismaClient,
+    Role,
+    UserStatus,
+    ProjectStatus,
+    TicketType,
+    Priority,
+    UserKind,
+    ProjectMemberRole,
+    StatusUpdateVisibility,
+} from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
@@ -8,6 +18,7 @@ async function main() {
 
     // ─── Clean existing data ─────────────────────────────
     await prisma.activityLog.deleteMany()
+    await prisma.projectStatusUpdate.deleteMany()
     await prisma.notification.deleteMany()
     await prisma.comment.deleteMany()
     await prisma.attachment.deleteMany()
@@ -29,6 +40,7 @@ async function main() {
         engineer: await bcrypt.hash('Engineer@2026', 12),
         designer: await bcrypt.hash('Designer@2026', 12),
         researcher: await bcrypt.hash('Researcher@2026', 12),
+        client: await bcrypt.hash('Client@2026', 12),
     }
 
     const users = await Promise.all([
@@ -38,6 +50,7 @@ async function main() {
                 email: 'admin@cengineers.com',
                 password: hashedPasswords.admin,
                 role: Role.ADMIN,
+                userKind: UserKind.INTERNAL,
                 status: UserStatus.ACTIVE,
                 avatar: '/avatars/admin.png',
             },
@@ -48,6 +61,7 @@ async function main() {
                 email: 'john.doe@cengineers.com',
                 password: hashedPasswords.manager,
                 role: Role.MANAGER,
+                userKind: UserKind.INTERNAL,
                 status: UserStatus.ACTIVE,
                 avatar: '/avatars/john.png',
             },
@@ -58,6 +72,7 @@ async function main() {
                 email: 'jane.smith@cengineers.com',
                 password: hashedPasswords.engineer,
                 role: Role.ENGINEER,
+                userKind: UserKind.INTERNAL,
                 status: UserStatus.ACTIVE,
                 avatar: '/avatars/jane.png',
             },
@@ -68,6 +83,7 @@ async function main() {
                 email: 'alex.johnson@cengineers.com',
                 password: hashedPasswords.designer,
                 role: Role.DESIGNER,
+                userKind: UserKind.INTERNAL,
                 status: UserStatus.ACTIVE,
                 avatar: '/avatars/alex.png',
             },
@@ -78,6 +94,7 @@ async function main() {
                 email: 'sarah.williams@cengineers.com',
                 password: hashedPasswords.researcher,
                 role: Role.RESEARCHER,
+                userKind: UserKind.INTERNAL,
                 status: UserStatus.INACTIVE,
                 avatar: '/avatars/sarah.png',
             },
@@ -88,8 +105,20 @@ async function main() {
                 email: 'michael.brown@cengineers.com',
                 password: hashedPasswords.engineer,
                 role: Role.ENGINEER,
+                userKind: UserKind.INTERNAL,
                 status: UserStatus.ACTIVE,
                 avatar: '/avatars/michael.png',
+            },
+        }),
+        prisma.user.create({
+            data: {
+                name: 'Acme Corp Client',
+                email: 'client@acmecorp.demo',
+                password: hashedPasswords.client,
+                role: Role.VIEWER,
+                userKind: UserKind.CLIENT,
+                status: UserStatus.ACTIVE,
+                avatar: null,
             },
         }),
     ])
@@ -116,10 +145,10 @@ async function main() {
             status: ProjectStatus.ACTIVE,
             members: {
                 create: [
-                    { userId: users[1].id, role: 'owner' },
-                    { userId: users[2].id, role: 'member' },
-                    { userId: users[3].id, role: 'member' },
-                    { userId: users[5].id, role: 'member' },
+                    { userId: users[1].id, role: ProjectMemberRole.OWNER },
+                    { userId: users[2].id, role: ProjectMemberRole.MEMBER },
+                    { userId: users[3].id, role: ProjectMemberRole.MEMBER },
+                    { userId: users[5].id, role: ProjectMemberRole.MEMBER },
                 ],
             },
         },
@@ -132,9 +161,10 @@ async function main() {
             status: ProjectStatus.ACTIVE,
             members: {
                 create: [
-                    { userId: users[1].id, role: 'owner' },
-                    { userId: users[2].id, role: 'member' },
-                    { userId: users[4].id, role: 'member' },
+                    { userId: users[1].id, role: ProjectMemberRole.OWNER },
+                    { userId: users[2].id, role: ProjectMemberRole.MEMBER },
+                    { userId: users[4].id, role: ProjectMemberRole.MEMBER },
+                    { userId: users[6].id, role: ProjectMemberRole.CLIENT },
                 ],
             },
         },
@@ -147,14 +177,41 @@ async function main() {
             status: ProjectStatus.ACTIVE,
             members: {
                 create: [
-                    { userId: users[1].id, role: 'owner' },
-                    { userId: users[3].id, role: 'member' },
-                    { userId: users[5].id, role: 'member' },
+                    { userId: users[1].id, role: ProjectMemberRole.OWNER },
+                    { userId: users[3].id, role: ProjectMemberRole.MEMBER },
+                    { userId: users[5].id, role: ProjectMemberRole.MEMBER },
                 ],
             },
         },
     })
     console.log('✅ Created 3 projects')
+
+    await prisma.projectStatusUpdate.createMany({
+        data: [
+            {
+                projectId: project2.id,
+                authorId: users[1].id,
+                title: 'Sprint kickoff complete',
+                body: 'Discovery workshop finished. Next: wireframes for the client dashboard and document upload flow.',
+                visibility: StatusUpdateVisibility.CLIENT,
+            },
+            {
+                projectId: project2.id,
+                authorId: users[1].id,
+                title: 'Internal: vendor shortlist',
+                body: 'Evaluating two e-signature vendors — not shared externally until legal signs off.',
+                visibility: StatusUpdateVisibility.INTERNAL,
+            },
+            {
+                projectId: project1.id,
+                authorId: users[1].id,
+                title: 'Design review scheduled',
+                body: 'Stakeholder review moved to Thursday 3pm.',
+                visibility: StatusUpdateVisibility.CLIENT,
+            },
+        ],
+    })
+    console.log('✅ Created project status updates')
 
     // ─── Boards & Columns ───────────────────────────────
     const board1 = await prisma.board.create({
@@ -575,6 +632,7 @@ async function main() {
     console.log('Designer:   alex.johnson@cengineers.com / Designer@2026')
     console.log('Researcher: sarah.williams@cengineers.com / Researcher@2026')
     console.log('Engineer:   michael.brown@cengineers.com / Engineer@2026')
+    console.log('Client:     client@acmecorp.demo          / Client@2026  (Client Portal Development)')
 }
 
 main()

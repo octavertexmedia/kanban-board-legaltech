@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getAuthFromRequest } from '@/lib/api-middleware'
+import { requireAuth } from '@/lib/api-middleware'
+import { isClientAuth } from '@/lib/auth'
 import { google } from 'googleapis'
 
 const oauth2Client = new google.auth.OAuth2(
@@ -20,6 +21,12 @@ const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
 // GET /api/meetings
 export async function GET(req: NextRequest) {
     try {
+        const auth = requireAuth(req)
+        if (auth instanceof NextResponse) return auth
+        if (isClientAuth(auth)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        }
+
         const { searchParams } = new URL(req.url)
         const date = searchParams.get('date')
         const upcoming = searchParams.get('upcoming')
@@ -62,7 +69,12 @@ export async function GET(req: NextRequest) {
 // POST /api/meetings
 export async function POST(req: NextRequest) {
     try {
-        const auth = getAuthFromRequest(req)
+        const auth = requireAuth(req)
+        if (auth instanceof NextResponse) return auth
+        if (isClientAuth(auth)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        }
+
         const body = await req.json()
 
         const { title, description, startTime, endTime, meetLink, attendeeIds, externalAttendees } = body

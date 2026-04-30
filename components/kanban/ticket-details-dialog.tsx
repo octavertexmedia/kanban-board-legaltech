@@ -56,6 +56,7 @@ interface TicketDetailsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onTicketUpdated?: (ticket: DBTicket) => void
+  readOnly?: boolean
 }
 
 const getPriorityColor = (p: string) => {
@@ -85,6 +86,7 @@ export function TicketDetailsDialog({
   open,
   onOpenChange,
   onTicketUpdated,
+  readOnly = false,
 }: TicketDetailsDialogProps) {
   const [commentText, setCommentText] = useState("")
   const [comments, setComments] = useState<DBComment[]>([])
@@ -95,7 +97,7 @@ export function TicketDetailsDialog({
   const [assigneeId, setAssigneeId] = useState(ticket?.assignee?.id || "")
   const [isUpdatingAssignee, setIsUpdatingAssignee] = useState(false)
   const { token, user, isAdmin, isManager } = useAuth()
-  const canAssign = isAdmin || isManager
+  const canAssign = !readOnly && (isAdmin || isManager)
 
   const authHeaders = (): HeadersInit => ({
     "Content-Type": "application/json",
@@ -109,8 +111,8 @@ export function TicketDetailsDialog({
     if (!ticket || !open) return
     setAssigneeId(ticket.assignee?.id || "")
     loadTicketDetails()
-    loadUsers()
-  }, [ticket?.id, open])
+    if (!readOnly) loadUsers()
+  }, [ticket?.id, open, readOnly])
 
   const loadTicketDetails = async () => {
     if (!ticket) return
@@ -341,41 +343,43 @@ export function TicketDetailsDialog({
 
           {/* COMMENTS TAB */}
           <TabsContent value="comments" className="pt-4 space-y-4">
-            {/* New comment input */}
-            <div className="flex gap-3">
-              <Avatar className="h-8 w-8 shrink-0">
-                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-xs font-bold">
-                  {user?.name?.[0] || "?"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 space-y-2">
-                <Textarea
-                  placeholder="Add a comment..."
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  className="min-h-[80px] resize-none"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                      handleSubmitComment()
-                    }
-                  }}
-                />
-                <div className="flex justify-between items-center">
-                  <p className="text-xs text-muted-foreground">⌘+Enter to submit</p>
-                  <Button
-                    onClick={handleSubmitComment}
-                    disabled={!commentText.trim() || isSubmitting}
-                    size="sm"
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    {isSubmitting ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-2 h-3.5 w-3.5" />}
-                    Post Comment
-                  </Button>
+            {!readOnly && (
+              <>
+                <div className="flex gap-3">
+                  <Avatar className="h-8 w-8 shrink-0">
+                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-xs font-bold">
+                      {user?.name?.[0] || "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 space-y-2">
+                    <Textarea
+                      placeholder="Add a comment..."
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      className="min-h-[80px] resize-none"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                          handleSubmitComment()
+                        }
+                      }}
+                    />
+                    <div className="flex justify-between items-center">
+                      <p className="text-xs text-muted-foreground">⌘+Enter to submit</p>
+                      <Button
+                        onClick={handleSubmitComment}
+                        disabled={!commentText.trim() || isSubmitting}
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        {isSubmitting ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-2 h-3.5 w-3.5" />}
+                        Post Comment
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-
-            <Separator />
+                <Separator />
+              </>
+            )}
 
             {/* Comments list */}
             {isLoadingComments ? (

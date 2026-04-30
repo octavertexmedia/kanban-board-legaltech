@@ -1,4 +1,19 @@
-import { APP_URL } from './resend-client';
+import { APP_URL } from '@/lib/email/mail-config';
+import { APP_DISPLAY_NAME, OCTAVERTEX_LOGO_URL } from '@/lib/brand';
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Plain-text fragments used in email Subject headers (not HTML-escaped). */
+function subjectSafe(text: string): string {
+  return text.replace(/[\r\n\u0000]+/g, ' ').trim().slice(0, 200);
+}
 
 // Shared email wrapper with premium design
 function emailWrapper(content: string, preheader?: string): string {
@@ -8,7 +23,7 @@ function emailWrapper(content: string, preheader?: string): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cengineers Kanban</title>
+  <title>${APP_DISPLAY_NAME}</title>
   ${preheader ? `<span style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">${preheader}</span>` : ''}
 </head>
 <body style="margin:0;padding:0;background-color:#f0f2f5;font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
@@ -18,14 +33,12 @@ function emailWrapper(content: string, preheader?: string): string {
         <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
           <!-- Header -->
           <tr>
-            <td style="background:linear-gradient(135deg,#2962FF 0%,#6366f1 100%);padding:32px 40px;">
+            <td style="background:linear-gradient(135deg,#7f1d1d 0%,#ff3131 100%);padding:28px 40px;">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td>
-                    <div style="display:inline-block;width:40px;height:40px;background:rgba(255,255,255,0.2);border-radius:10px;text-align:center;line-height:40px;margin-right:12px;">
-                      <span style="color:#ffffff;font-size:18px;font-weight:bold;">CK</span>
-                    </div>
-                    <span style="color:#ffffff;font-size:22px;font-weight:700;vertical-align:middle;">Cengineers Kanban</span>
+                    <img src="${OCTAVERTEX_LOGO_URL}" alt="OctaVertex Media" width="200" height="48" style="max-height:48px;width:auto;display:block;border:0;outline:none;text-decoration:none;" />
+                    <div style="color:rgba(255,255,255,0.92);font-size:14px;font-weight:600;margin-top:10px;letter-spacing:0.02em;">${APP_DISPLAY_NAME}</div>
                   </td>
                 </tr>
               </table>
@@ -43,10 +56,10 @@ function emailWrapper(content: string, preheader?: string): string {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="color:#94a3b8;font-size:12px;line-height:1.6;">
-                    <p style="margin:0;">This email was sent by <strong style="color:#64748b;">Cengineers Kanban</strong>.</p>
+                    <p style="margin:0;">This email was sent by <strong style="color:#64748b;">${APP_DISPLAY_NAME}</strong> (OctaVertex Media).</p>
                     <p style="margin:4px 0 0 0;">
-                      <a href="${APP_URL}/settings" style="color:#2962FF;text-decoration:none;">Manage notification preferences</a> · 
-                      <a href="${APP_URL}" style="color:#2962FF;text-decoration:none;">Open Dashboard</a>
+                      <a href="${APP_URL}/settings" style="color:#dc2626;text-decoration:none;">Manage notification preferences</a> · 
+                      <a href="${APP_URL}" style="color:#dc2626;text-decoration:none;">Open app</a>
                     </p>
                   </td>
                 </tr>
@@ -54,7 +67,7 @@ function emailWrapper(content: string, preheader?: string): string {
             </td>
           </tr>
         </table>
-        <p style="color:#94a3b8;font-size:11px;margin-top:16px;">© ${new Date().getFullYear()} Cengineers. All rights reserved.</p>
+        <p style="color:#94a3b8;font-size:11px;margin-top:16px;">© ${new Date().getFullYear()} OctaVertex Media. All rights reserved.</p>
       </td>
     </tr>
   </table>
@@ -63,7 +76,7 @@ function emailWrapper(content: string, preheader?: string): string {
 }
 
 // Primary CTA button
-function ctaButton(label: string, url: string, color: string = '#2962FF'): string {
+function ctaButton(label: string, url: string, color: string = '#ff3131'): string {
   return `
     <table cellpadding="0" cellspacing="0" style="margin:24px 0;">
       <tr>
@@ -94,7 +107,7 @@ export function teamInviteEmail(data: {
   role: string;
 }): { subject: string; html: string } {
   return {
-    subject: `🎉 You've been invited to ${data.teamName} on Cengineers Kanban`,
+    subject: `🎉 You've been invited to ${data.teamName} on ${APP_DISPLAY_NAME}`,
     html: emailWrapper(`
       <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#1e293b;">You're Invited! 🎉</h1>
       <p style="color:#64748b;font-size:16px;line-height:1.6;margin:0 0 24px;">
@@ -176,6 +189,44 @@ export function ticketAssignedEmail(data: {
   };
 }
 
+export function ticketMentionedEmail(data: {
+  recipientName: string;
+  actorName: string;
+  ticketTitle: string;
+  projectName: string;
+  projectId: string;
+  ticketId: string;
+  snippet: string;
+  mentionKind: 'comment' | 'username_mention';
+}): { subject: string; html: string } {
+  const e = escapeHtml;
+  const isMention = data.mentionKind === 'username_mention';
+  const headline = isMention ? 'You were mentioned' : 'New comment on your ticket';
+  const lead = isMention
+    ? `<strong style="color:#1e293b;">${e(data.actorName)}</strong> mentioned you in a ticket on <strong style="color:#c2410c;">${e(data.projectName)}</strong>.`
+    : `<strong style="color:#1e293b;">${e(data.actorName)}</strong> commented on your ticket in <strong style="color:#c2410c;">${e(data.projectName)}</strong>.`;
+  const snippetBlock = data.snippet
+    ? `<div style="background:#f8fafc;border-radius:12px;padding:16px 20px;margin:0 0 24px;border:1px solid #e2e8f0;border-left:4px solid #ea580c;">
+        <p style="margin:0;color:#475569;font-size:14px;line-height:1.65;white-space:pre-wrap;">${e(data.snippet)}</p>
+      </div>`
+    : '';
+  return {
+    subject: isMention
+      ? `✉️ ${subjectSafe(data.actorName)} mentioned you — ${subjectSafe(data.ticketTitle)}`
+      : `💬 New comment — ${subjectSafe(data.ticketTitle)}`,
+    html: emailWrapper(`
+      <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#1e293b;">${headline}</h1>
+      <p style="color:#64748b;font-size:16px;line-height:1.6;margin:0 0 20px;">${lead}</p>
+      <div style="margin:0 0 16px;">
+        <h2 style="margin:0 0 6px;font-size:18px;font-weight:600;color:#1e293b;">${e(data.ticketTitle)}</h2>
+        <p style="margin:0;color:#94a3b8;font-size:12px;">${e(data.projectName)}</p>
+      </div>
+      ${snippetBlock}
+      ${ctaButton('Open ticket', `${APP_URL}/projects/${encodeURIComponent(data.projectId)}?ticket=${encodeURIComponent(data.ticketId)}`, '#ea580c')}
+    `, isMention ? `Mention in ${data.ticketTitle}` : `Comment on ${data.ticketTitle}`),
+  };
+}
+
 export function meetingInviteEmail(data: {
   attendeeName: string;
   organizerName: string;
@@ -227,6 +278,33 @@ export function meetingInviteEmail(data: {
         <a href="${APP_URL}/meetings" style="color:#2962FF;text-decoration:none;">View in Calendar →</a>
       </p>
     `, `${data.meetingTitle} on ${data.date}`)
+  };
+}
+
+export function meetingReminderEmail(data: {
+  recipientName: string;
+  organizerName: string;
+  meetingTitle: string;
+  date: string;
+  startTime: string;
+  timeRemaining: string;
+  meetLink: string;
+}): { subject: string; html: string } {
+  const e = escapeHtml;
+  return {
+    subject: `⏰ Reminder: ${subjectSafe(data.meetingTitle)} (${subjectSafe(data.timeRemaining)})`,
+    html: emailWrapper(`
+      <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#1e293b;">Meeting reminder</h1>
+      <p style="color:#64748b;font-size:16px;line-height:1.6;margin:0 0 20px;">
+        Hi <strong style="color:#1e293b;">${e(data.recipientName)}</strong>, this is a quick reminder from <strong style="color:#1e293b;">${e(data.organizerName)}</strong>.
+      </p>
+      <div style="background:linear-gradient(135deg,#fffbeb 0%,#fef3c7 100%);border-radius:12px;padding:22px;margin:0 0 24px;border:1px solid #fcd34d;">
+        <h2 style="margin:0 0 10px;font-size:19px;font-weight:600;color:#1e293b;">${e(data.meetingTitle)}</h2>
+        <p style="margin:0 0 8px;color:#92400e;font-size:14px;"><strong>When:</strong> ${e(data.date)} · ${e(data.startTime)}</p>
+        <p style="margin:0;color:#b45309;font-size:15px;font-weight:600;">Starts in ${e(data.timeRemaining)}</p>
+      </div>
+      ${data.meetLink ? ctaButton('Join or view meeting', data.meetLink, '#d97706') : ctaButton('View meetings', `${APP_URL}/meetings`, '#d97706')}
+    `, `Reminder: ${data.meetingTitle}`),
   };
 }
 
@@ -302,7 +380,7 @@ export function weeklyDigestEmail(data: {
   teamUpdates: string[];
 }): { subject: string; html: string } {
   return {
-    subject: `📊 Your Weekly Digest — Cengineers Kanban`,
+    subject: `📊 Your Weekly Digest — ${APP_DISPLAY_NAME}`,
     html: emailWrapper(`
       <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#1e293b;">Weekly Digest 📊</h1>
       <p style="color:#64748b;font-size:16px;line-height:1.6;margin:0 0 24px;">
@@ -349,7 +427,7 @@ export function passwordResetEmail(data: {
   resetLink: string;
 }): { subject: string; html: string } {
   return {
-    subject: `🔒 Reset Your Password — Cengineers Kanban`,
+    subject: `🔒 Reset Your Password — ${APP_DISPLAY_NAME}`,
     html: emailWrapper(`
       <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#1e293b;">Password Reset Request</h1>
       <p style="color:#64748b;font-size:16px;line-height:1.6;margin:0 0 24px;">
@@ -367,6 +445,6 @@ export function passwordResetEmail(data: {
         Alternatively, copy to your browser: <br/>
         <code style="background:#f1f5f9;padding:4px 8px;border-radius:4px;word-break:break-all;color:#475569;">${data.resetLink}</code>
       </p>
-    `, `Reset your Cengineers Kanban password`)
+    `, `Reset your ${APP_DISPLAY_NAME} password`)
   };
 }

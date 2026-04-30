@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getAuthFromRequest } from '@/lib/api-middleware'
+import { requireAuth } from '@/lib/api-middleware'
+import { canAccessProject } from '@/lib/project-access'
+import { isClientAuth } from '@/lib/auth'
+import { hasPermission } from '@/lib/auth'
 
 // GET /api/projects/[id] — Get project with full board
 export async function GET(
@@ -8,14 +11,21 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const auth = requireAuth(req)
+        if (auth instanceof NextResponse) return auth
+
         const { id } = await params
+        const allowed = await canAccessProject(prisma, auth, id)
+        if (!allowed) {
+            return NextResponse.json({ error: 'Forbidden or project not found' }, { status: 403 })
+        }
 
         const project = await prisma.project.findUnique({
             where: { id },
             include: {
                 members: {
                     include: {
-                        user: { select: { id: true, name: true, email: true, role: true, avatar: true, status: true } },
+                        user: { select: { id: true, name: true, email: true, role: true, avatar: true, status: true, userKind: true } },
                     },
                 },
                 board: {
@@ -54,7 +64,21 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const auth = requireAuth(req)
+        if (auth instanceof NextResponse) return auth
+        if (isClientAuth(auth)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        }
+        if (!hasPermission(auth.role, 'manage_projects')) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        }
+
         const { id } = await params
+        const allowed = await canAccessProject(prisma, auth, id)
+        if (!allowed) {
+            return NextResponse.json({ error: 'Forbidden or project not found' }, { status: 403 })
+        }
+
         const body = await req.json()
 
         const updateData: any = {}
@@ -84,7 +108,21 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const auth = requireAuth(req)
+        if (auth instanceof NextResponse) return auth
+        if (isClientAuth(auth)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        }
+        if (!hasPermission(auth.role, 'manage_projects')) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        }
+
         const { id } = await params
+        const allowed = await canAccessProject(prisma, auth, id)
+        if (!allowed) {
+            return NextResponse.json({ error: 'Forbidden or project not found' }, { status: 403 })
+        }
+
         await prisma.project.delete({ where: { id } })
         return NextResponse.json({ success: true })
     } catch (error: any) {

@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
-import { Role } from '@prisma/client'
+import { Role, UserKind } from '@prisma/client'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'cengineers-kanban-secret-key-2026'
 const JWT_EXPIRES_IN = '7d'
@@ -10,14 +10,20 @@ export interface AuthUser {
     name: string
     email: string
     role: Role
+    userKind: UserKind
 }
 
 export interface JWTPayload {
     userId: string
     email: string
     role: Role
+    userKind?: UserKind
     iat?: number
     exp?: number
+}
+
+export function isClientAuth(payload: JWTPayload): boolean {
+    return (payload.userKind ?? UserKind.INTERNAL) === UserKind.CLIENT
 }
 
 // ─── Hash a password ─────────────────────────────────────
@@ -36,6 +42,7 @@ export function generateToken(user: AuthUser): string {
         userId: user.id,
         email: user.email,
         role: user.role,
+        userKind: user.userKind,
     }
     return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
 }
@@ -43,7 +50,11 @@ export function generateToken(user: AuthUser): string {
 // ─── Verify JWT token ────────────────────────────────────
 export function verifyToken(token: string): JWTPayload | null {
     try {
-        return jwt.verify(token, JWT_SECRET) as JWTPayload
+        const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload
+        if (decoded.userKind == null) {
+            decoded.userKind = UserKind.INTERNAL
+        }
+        return decoded
     } catch {
         return null
     }

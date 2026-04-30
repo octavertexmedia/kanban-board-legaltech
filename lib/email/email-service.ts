@@ -5,6 +5,7 @@ export class EmailService {
             const response = await fetch('/api/send-email', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ type, to, data }),
             });
 

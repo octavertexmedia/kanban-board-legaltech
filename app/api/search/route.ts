@@ -1,9 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { requireAuth } from '@/lib/api-middleware'
+import { getAccessibleProjectIds } from '@/lib/project-access'
+import { isClientAuth } from '@/lib/auth'
 
 // GET /api/search?q=query — Full-text search across all entities
 export async function GET(req: NextRequest) {
     try {
+        const auth = requireAuth(req)
+        if (auth instanceof NextResponse) return auth
+
+        const accessibleIds = await getAccessibleProjectIds(prisma, auth)
+        const projectScope =
+            accessibleIds.length > 0
+                ? { column: { board: { projectId: { in: accessibleIds } } } }
+                : { column: { board: { projectId: '__none__' } } }
+
         const { searchParams } = new URL(req.url)
         const query = searchParams.get('q')?.trim()
         const type = searchParams.get('type') // filter by type: ticket, project, article, user, meeting
@@ -13,16 +25,20 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ results: [], total: 0 })
         }
 
-        const searchTerm = `%${query}%`
         const results: any[] = []
 
         // ─── Search Tickets ─────────────────────────────────
         if (!type || type === 'ticket') {
             const tickets = await prisma.ticket.findMany({
                 where: {
-                    OR: [
-                        { title: { contains: query, mode: 'insensitive' } },
-                        { description: { contains: query, mode: 'insensitive' } },
+                    AND: [
+                        projectScope,
+                        {
+                            OR: [
+                                { title: { contains: query, mode: 'insensitive' } },
+                                { description: { contains: query, mode: 'insensitive' } },
+                            ],
+                        },
                     ],
                 },
                 include: {
@@ -60,6 +76,7 @@ export async function GET(req: NextRequest) {
         if (!type || type === 'project') {
             const projects = await prisma.project.findMany({
                 where: {
+                    id: { in: accessibleIds.length ? accessibleIds : ['__none__'] },
                     OR: [
                         { name: { contains: query, mode: 'insensitive' } },
                         { description: { contains: query, mode: 'insensitive' } },
@@ -89,7 +106,7 @@ export async function GET(req: NextRequest) {
         }
 
         // ─── Search Knowledge Articles ──────────────────────
-        if (!type || type === 'article') {
+        if ((!type || type === 'article') && !isClientAuth(auth)) {
             const articles = await prisma.knowledgeArticle.findMany({
                 where: {
                     OR: [
@@ -123,7 +140,7 @@ export async function GET(req: NextRequest) {
         }
 
         // ─── Search Users ───────────────────────────────────
-        if (!type || type === 'user') {
+        if ((!type || type === 'user') && !isClientAuth(auth)) {
             const users = await prisma.user.findMany({
                 where: {
                     OR: [
@@ -160,7 +177,7 @@ export async function GET(req: NextRequest) {
         }
 
         // ─── Search Meetings ────────────────────────────────
-        if (!type || type === 'meeting') {
+        if ((!type || type === 'meeting') && !isClientAuth(auth)) {
             const meetings = await prisma.meeting.findMany({
                 where: {
                     OR: [

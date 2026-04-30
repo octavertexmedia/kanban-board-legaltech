@@ -86,13 +86,13 @@ export function TeamSettings() {
 
     const formattedRole = inviteForm.role.charAt(0).toUpperCase() + inviteForm.role.slice(1)
 
-    // Send invitation email via Resend
+    // Send invitation email via AWS SES
     try {
       const result = await EmailService.sendTeamInvite({
         to: inviteForm.email,
         inviteeName: inviteForm.name,
         inviterName: "John Doe",
-        teamName: "Cengineers Legal Team",
+        teamName: "OctaVertex Media",
         role: formattedRole,
       })
 
@@ -103,7 +103,8 @@ export function TeamSettings() {
         })
       } else {
         toast.warning("Member added (email not sent)", {
-          description: "Check your Resend API key in .env.local",
+          description:
+            "Check AWS SES (AWS_SES_FROM_EMAIL, AWS_REGION, credentials). For server sends, set INTERNAL_EMAIL_WORKER_SECRET.",
           icon: <AlertCircle className="h-4 w-4" />,
         })
       }

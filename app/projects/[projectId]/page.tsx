@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Users, Calendar, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
+import { ProjectStatusUpdatesPanel } from "@/components/projects/project-status-updates-panel"
 import { toast } from "sonner"
 
 interface BoardProject {
@@ -37,7 +38,7 @@ export default function ProjectPage() {
   const projectId = params.projectId as string
   const [project, setProject] = useState<BoardProject | null>(null)
   const [loading, setLoading] = useState(true)
-  const { token } = useAuth()
+  const { token, isClientUser } = useAuth()
 
   useEffect(() => {
     if (!projectId) return
@@ -87,9 +88,12 @@ export default function ProjectPage() {
             {/* Project header */}
             <div className="mb-6 space-y-3">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Link href="/projects" className="flex items-center gap-1 hover:text-foreground transition-colors">
+                <Link
+                  href={isClientUser ? "/client" : "/projects"}
+                  className="flex items-center gap-1 hover:text-foreground transition-colors"
+                >
                   <ArrowLeft className="h-3.5 w-3.5" />
-                  Projects
+                  {isClientUser ? "My projects" : "Projects"}
                 </Link>
                 <span>/</span>
                 <span className="text-foreground font-medium">{project.name}</span>
@@ -136,7 +140,9 @@ export default function ProjectPage() {
               </div>
             </div>
 
-            <ProjectKanbanBoard projectId={project.id} />
+            <ProjectStatusUpdatesPanel projectId={project.id} readOnly={isClientUser} />
+
+            <ProjectKanbanBoard projectId={project.id} readOnly={isClientUser} />
           </>
         ) : (
           <div className="flex items-center justify-center h-[60vh]">

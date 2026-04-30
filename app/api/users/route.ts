@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { getAuthFromRequest, requireRole } from '@/lib/api-middleware'
-import { hashPassword } from '@/lib/auth'
+import { hashPassword, isClientAuth } from '@/lib/auth'
+import { UserKind } from '@prisma/client'
 
 // GET /api/users — List users (requires authentication)
 export async function GET(req: NextRequest) {
@@ -9,6 +10,9 @@ export async function GET(req: NextRequest) {
         const auth = getAuthFromRequest(req)
         if (!auth) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        if (isClientAuth(auth)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
 
         const { searchParams } = new URL(req.url)
@@ -31,6 +35,7 @@ export async function GET(req: NextRequest) {
                 name: true,
                 email: true,
                 role: true,
+                userKind: true,
                 status: true,
                 avatar: true,
                 lastActive: true,
@@ -59,40 +64,51 @@ export async function POST(req: NextRequest) {
         if (auth instanceof NextResponse) return auth
 
         const body = await req.json()
-        const { name, email, password, role } = body
+        const { name, email, password, role, userKind: bodyUserKind } = body
 
-        if (!name || !email || !password || !role) {
+        if (!name || !email || !password) {
             return NextResponse.json(
-                { error: 'Name, email, password, and role are required' },
+                { error: 'Name, email, and password are required' },
                 { status: 400 }
             )
         }
 
-        // Validate role assignment hierarchy
-        const requestedRole = role.toUpperCase()
+        const userKind =
+            String(bodyUserKind).toUpperCase() === 'CLIENT'
+                ? UserKind.CLIENT
+                : UserKind.INTERNAL
+
+        if (userKind === UserKind.INTERNAL && !role) {
+            return NextResponse.json(
+                { error: 'Role is required for internal users' },
+                { status: 400 }
+            )
+        }
+
+        const requestedRole = (role || 'VIEWER').toString().toUpperCase()
         const validRoles = ['MANAGER', 'ENGINEER', 'DESIGNER', 'RESEARCHER', 'VIEWER']
 
-        // Only SUPER_ADMIN can create ADMIN accounts
-        if (requestedRole === 'ADMIN' && auth.role !== 'SUPER_ADMIN') {
-            return NextResponse.json(
-                { error: 'Forbidden — only Super Admin can create Admin accounts' },
-                { status: 403 }
-            )
-        }
+        if (userKind === UserKind.INTERNAL) {
+            if (requestedRole === 'ADMIN' && auth.role !== 'SUPER_ADMIN') {
+                return NextResponse.json(
+                    { error: 'Forbidden — only Super Admin can create Admin accounts' },
+                    { status: 403 }
+                )
+            }
 
-        // Cannot create SUPER_ADMIN accounts via API
-        if (requestedRole === 'SUPER_ADMIN') {
-            return NextResponse.json(
-                { error: 'Forbidden — cannot create Super Admin accounts' },
-                { status: 403 }
-            )
-        }
+            if (requestedRole === 'SUPER_ADMIN') {
+                return NextResponse.json(
+                    { error: 'Forbidden — cannot create Super Admin accounts' },
+                    { status: 403 }
+                )
+            }
 
-        if (!validRoles.includes(requestedRole) && requestedRole !== 'ADMIN') {
-            return NextResponse.json(
-                { error: `Invalid role. Valid roles: ${validRoles.join(', ')}` },
-                { status: 400 }
-            )
+            if (!validRoles.includes(requestedRole) && requestedRole !== 'ADMIN') {
+                return NextResponse.json(
+                    { error: `Invalid role. Valid roles: ${validRoles.join(', ')}` },
+                    { status: 400 }
+                )
+            }
         }
 
         // Check if email already exists
@@ -106,12 +122,16 @@ export async function POST(req: NextRequest) {
 
         const hashedPassword = await hashPassword(password)
 
+        const effectiveRole =
+            userKind === UserKind.CLIENT ? 'VIEWER' : requestedRole
+
         const newUser = await prisma.user.create({
             data: {
                 name,
                 email: email.toLowerCase(),
                 password: hashedPassword,
-                role: requestedRole as any,
+                role: effectiveRole as any,
+                userKind,
                 status: 'ACTIVE',
             },
             select: {
@@ -119,6 +139,7 @@ export async function POST(req: NextRequest) {
                 name: true,
                 email: true,
                 role: true,
+                userKind: true,
                 status: true,
                 avatar: true,
                 createdAt: true,
@@ -131,7 +152,7 @@ export async function POST(req: NextRequest) {
                 action: 'created',
                 entity: 'user',
                 entityId: newUser.id,
-                details: `Created user "${name}" with role ${requestedRole}`,
+                details: `Created user "${name}" (${userKind}) role ${effectiveRole}`,
                 userId: auth.userId,
             },
         })

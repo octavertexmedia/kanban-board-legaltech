@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { getAuthFromRequest } from '@/lib/api-middleware'
+import { isClientAuth } from '@/lib/auth'
 
 // GET /api/audit-logs
 export async function GET(req: NextRequest) {
     try {
         const auth = getAuthFromRequest(req)
         if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        if (isClientAuth(auth)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        }
 
         // Only SUPER_ADMIN can view audit logs
         if (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN') {

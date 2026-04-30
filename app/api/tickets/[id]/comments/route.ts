@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getAuthFromRequest } from '@/lib/api-middleware'
+import { requireAuth } from '@/lib/api-middleware'
+import { canAccessProject } from '@/lib/project-access'
+import { isClientAuth } from '@/lib/auth'
 
 export async function POST(
     req: NextRequest,
@@ -8,7 +10,12 @@ export async function POST(
 ) {
     try {
         const { id } = await params
-        const auth = getAuthFromRequest(req)
+        const auth = requireAuth(req)
+        if (auth instanceof NextResponse) return auth
+        if (isClientAuth(auth)) {
+            return NextResponse.json({ error: 'Forbidden — clients cannot comment' }, { status: 403 })
+        }
+
         const { text, content } = await req.json()
         const commentText = (content || text || '').trim()
 
@@ -16,8 +23,20 @@ export async function POST(
             return NextResponse.json({ error: 'Comment text is required' }, { status: 400 })
         }
 
-        if (!auth) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        const ticketRow = await prisma.ticket.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                column: {
+                    select: {
+                        board: { select: { projectId: true } },
+                    },
+                },
+            },
+        })
+        const projId = ticketRow?.column.board?.projectId
+        if (!ticketRow || !projId || !(await canAccessProject(prisma, auth, projId))) {
+            return NextResponse.json({ error: 'Forbidden or ticket not found' }, { status: 403 })
         }
 
         const comment = await prisma.comment.create({
@@ -35,8 +54,12 @@ export async function POST(
             where: { id },
             include: {
                 assignee: true,
-                column: { include: { board: true } }
-            }
+                column: {
+                    include: {
+                        board: { include: { project: { select: { id: true, name: true } } } },
+                    },
+                },
+            },
         })
 
         if (process.env.PUSHER_APP_ID && ticket?.column?.board?.projectId) {
@@ -56,9 +79,11 @@ export async function POST(
                     {
                         ticketId: ticket.id,
                         projectId: ticket.column?.board?.projectId,
+                        projectName: ticket.column?.board?.project?.name,
                         title: ticket.title,
                         mentionedBy: comment.user,
-                        commentText: comment.text
+                        commentText: comment.text,
+                        mentionKind: "comment",
                     },
                     true // send email
                 )

@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getAuthFromRequest } from '@/lib/api-middleware'
+import { requireAuth } from '@/lib/api-middleware'
+import { isClientAuth } from '@/lib/auth'
 
 // POST /api/tickets/reassign — Bulk reassign tickets from one user to another
 export async function POST(req: NextRequest) {
     try {
-        const auth = getAuthFromRequest(req)
-        if (!auth) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        const auth = requireAuth(req)
+        if (auth instanceof NextResponse) return auth
+        if (isClientAuth(auth)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
 
         if (auth.role !== 'ADMIN' && auth.role !== 'SUPER_ADMIN') {

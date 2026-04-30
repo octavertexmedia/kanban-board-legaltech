@@ -25,6 +25,7 @@ const nextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: '*.vercel-storage.com' },
       { protocol: 'https', hostname: '*.public.blob.vercel-storage.com' },
+      { protocol: 'https', hostname: 'www.octavertexmedia.com', pathname: '/logo/**' },
     ],
   },
   experimental: {

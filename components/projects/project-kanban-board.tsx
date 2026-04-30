@@ -54,6 +54,8 @@ interface DBBoard {
 
 interface ProjectKanbanBoardProps {
   projectId: string
+  /** Read-only board (e.g. client portal) — no drag, no create */
+  readOnly?: boolean
 }
 
 // Column ordering and style config
@@ -90,14 +92,14 @@ const getTypeColor = (t: string) => {
   }
 }
 
-export function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProps) {
+export function ProjectKanbanBoard({ projectId, readOnly = false }: ProjectKanbanBoardProps) {
   const [board, setBoard] = useState<DBBoard | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [selectedTicket, setSelectedTicket] = useState<DBTicket | null>(null)
   const { token, isAdmin, isManager } = useAuth()
-  const canCreateTicket = isAdmin || isManager
+  const canCreateTicket = !readOnly && (isAdmin || isManager)
 
   const authHeaders = useCallback((): HeadersInit => ({
     "Content-Type": "application/json",
@@ -150,6 +152,7 @@ export function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProps) {
   }, [fetchBoard, projectId])
 
   const handleDragEnd = async (result: any) => {
+    if (readOnly) return
     const { destination, source, draggableId } = result
     if (!destination || !board) return
     if (destination.droppableId === source.droppableId && destination.index === source.index) return
@@ -317,7 +320,7 @@ export function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProps) {
                           }`}
                       >
                         {column.tickets.map((ticket, index) => (
-                          <Draggable key={ticket.id} draggableId={ticket.id} index={index} isDragDisabled={!canCreateTicket}>
+                          <Draggable key={ticket.id} draggableId={ticket.id} index={index} isDragDisabled={readOnly || !canCreateTicket}>
                             {(provided, snapshot) => (
                               <div
                                 ref={provided.innerRef}
@@ -435,6 +438,7 @@ export function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProps) {
           if (!open) setSelectedTicket(null)
         }}
         onTicketUpdated={handleTicketUpdated}
+        readOnly={readOnly}
       />
     </div>
   )

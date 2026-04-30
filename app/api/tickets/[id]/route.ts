@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getAuthFromRequest } from '@/lib/api-middleware'
+import { requireAuth } from '@/lib/api-middleware'
+import { canAccessProject } from '@/lib/project-access'
+import { isClientAuth } from '@/lib/auth'
 
 // GET /api/tickets/[id]
 export async function GET(
@@ -8,6 +10,9 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const auth = requireAuth(req)
+        if (auth instanceof NextResponse) return auth
+
         const { id } = await params
         const ticket = await prisma.ticket.findUnique({
             where: { id },
@@ -34,6 +39,11 @@ export async function GET(
             return NextResponse.json({ error: 'Ticket not found' }, { status: 404 })
         }
 
+        const pid = ticket.column.board?.projectId
+        if (!pid || !(await canAccessProject(prisma, auth, pid))) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        }
+
         return NextResponse.json({ ticket })
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 })
@@ -47,7 +57,12 @@ export async function PATCH(
 ) {
     try {
         const { id } = await params
-        const auth = getAuthFromRequest(req)
+        const auth = requireAuth(req)
+        if (auth instanceof NextResponse) return auth
+        if (isClientAuth(auth)) {
+            return NextResponse.json({ error: 'Forbidden — clients cannot edit tickets' }, { status: 403 })
+        }
+
         const body = await req.json()
 
         const existing = await prisma.ticket.findUnique({
@@ -59,8 +74,14 @@ export async function PATCH(
             return NextResponse.json({ error: 'Ticket not found' }, { status: 404 })
         }
 
+        const epId = existing.column.board?.projectId
+        if (!epId || !(await canAccessProject(prisma, auth, epId))) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        }
+
         const updateData: any = {}
-        const isManagerOrAdmin = auth?.role === 'ADMIN' || auth?.role === 'MANAGER'
+        const isManagerOrAdmin =
+            auth.role === 'SUPER_ADMIN' || auth.role === 'ADMIN' || auth.role === 'MANAGER'
 
         if (body.assigneeId !== undefined && body.assigneeId !== existing.assigneeId) {
             if (!isManagerOrAdmin) return NextResponse.json({ error: 'Forbidden: Only managers and admins can assign tickets' }, { status: 403 })
@@ -78,6 +99,16 @@ export async function PATCH(
         // Handle column move (drag-and-drop)
         if (body.columnId && body.columnId !== existing.columnId) {
             if (!isManagerOrAdmin) return NextResponse.json({ error: 'Forbidden: Only managers and admins can change ticket status' }, { status: 403 })
+
+            const targetCol = await prisma.column.findUnique({
+                where: { id: body.columnId },
+                select: {
+                    board: { select: { projectId: true } },
+                },
+            })
+            if (targetCol?.board?.projectId !== epId) {
+                return NextResponse.json({ error: 'Cannot move ticket to a different project' }, { status: 400 })
+            }
 
             updateData.columnId = body.columnId
 
@@ -188,17 +219,33 @@ export async function DELETE(
 ) {
     try {
         const { id } = await params
-        const auth = getAuthFromRequest(req)
-        if (!auth) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        const auth = requireAuth(req)
+        if (auth instanceof NextResponse) return auth
+        if (isClientAuth(auth)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
         if (auth.role !== 'ADMIN' && auth.role !== 'SUPER_ADMIN') {
             return NextResponse.json({ error: 'Forbidden — only Admins can delete tickets' }, { status: 403 })
         }
 
-        const existing = await prisma.ticket.findUnique({ where: { id }, select: { title: true } })
+        const existing = await prisma.ticket.findUnique({
+            where: { id },
+            select: {
+                title: true,
+                column: {
+                    select: {
+                        board: { select: { projectId: true } },
+                    },
+                },
+            },
+        })
         if (!existing) {
             return NextResponse.json({ error: 'Ticket not found' }, { status: 404 })
+        }
+
+        const dpId = existing.column.board?.projectId
+        if (!dpId || !(await canAccessProject(prisma, auth, dpId))) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
 
         await prisma.ticket.delete({ where: { id } })

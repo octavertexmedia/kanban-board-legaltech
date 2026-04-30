@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/lib/auth-context"
 import { Toaster } from "sonner"
+import { APP_DISPLAY_NAME, OCTAVERTEX_MARKETING_URL } from "@/lib/brand"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -12,14 +13,19 @@ const inter = Inter({
 })
 
 export const metadata = {
-  title: "Cengineers Kanban — Legal Team Management",
+  title: `${APP_DISPLAY_NAME} — OctaVertex Media`,
   description:
-    "Streamline your legal team's workflow with powerful project management, knowledge sharing, and collaboration tools built for modern legal teams.",
-  keywords: "kanban, legal tech, project management, team collaboration, legal workflow",
+    `Project management for OctaVertex Media: internal delivery and client-visible status updates. ${OCTAVERTEX_MARKETING_URL}`,
+  keywords:
+    "OctaVertex, project management, client portal, kanban, OctaVertex Media",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "https://kanban.vertexcrm.in"
+  ),
   openGraph: {
-    title: "Cengineers Kanban",
-    description: "Legal team project management & collaboration platform",
+    title: APP_DISPLAY_NAME,
+    description: "Internal and client project tracking for OctaVertex Media",
     type: "website",
+    url: process.env.NEXT_PUBLIC_APP_URL || "https://kanban.vertexcrm.in",
   },
 }
 

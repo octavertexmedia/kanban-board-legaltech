@@ -40,7 +40,7 @@ export function ProjectsList() {
   const [projects, setProjects] = useState<DBProject[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { token } = useAuth()
+  const { token, isClientUser } = useAuth()
 
   const fetchProjects = useCallback(async () => {
     setIsLoading(true)
@@ -75,17 +75,23 @@ export function ProjectsList() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Projects</h1>
-          <p className="text-muted-foreground">Manage your team's projects and track progress</p>
+          <h1 className="text-2xl font-bold tracking-tight">{isClientUser ? "Your projects" : "Projects"}</h1>
+          <p className="text-muted-foreground">
+            {isClientUser
+              ? "Projects shared with you by OctaVertex Media"
+              : "Manage your team's projects and track progress"}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={fetchProjects} className="h-9 w-9" title="Refresh">
             <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
           </Button>
-          <Button onClick={() => setIsCreateOpen(true)} className="bg-[#2962FF] hover:bg-[#2962FF]/90">
-            <Plus className="mr-2 h-4 w-4" />
-            Create Project
-          </Button>
+          {!isClientUser && (
+            <Button onClick={() => setIsCreateOpen(true)} className="bg-primary hover:bg-primary/90">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Project
+            </Button>
+          )}
         </div>
       </div>
 
@@ -125,8 +131,8 @@ export function ProjectsList() {
             <p className="text-muted-foreground mt-1">
               {searchQuery ? "No projects match your search." : "Create your first project to get started."}
             </p>
-            {!searchQuery && (
-              <Button onClick={() => setIsCreateOpen(true)} className="mt-4 bg-[#2962FF] hover:bg-[#2962FF]/90">
+            {!searchQuery && !isClientUser && (
+              <Button onClick={() => setIsCreateOpen(true)} className="mt-4 bg-primary hover:bg-primary/90">
                 <Plus className="mr-2 h-4 w-4" />
                 Create Project
               </Button>
