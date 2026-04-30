@@ -11,6 +11,11 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/auth/sign-in', request.url))
     }
 
+    // Neon’s built-in skip list does not include this legacy path; allow through so the server redirect runs.
+    if (pathname === '/auth/verify-email') {
+        return NextResponse.next()
+    }
+
     return neonProtect(request)
 }
 

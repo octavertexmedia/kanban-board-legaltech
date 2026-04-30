@@ -40,6 +40,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(true)
   const [error, setError] = useState("")
+  const [showVerifyCta, setShowVerifyCta] = useState(false)
   const router = useRouter()
   const { login, isAuthenticated, user } = useAuth()
 
@@ -53,13 +54,16 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
     setError("")
+    setShowVerifyCta(false)
 
     try {
       const result = await login(email, password)
       if (result.success) {
         router.push(result.user?.userKind === "CLIENT" ? "/client" : "/")
       } else {
-        setError(result.error || "Invalid email or password")
+        const msg = result.error || "Invalid email or password"
+        setShowVerifyCta(/verify|not verified/i.test(msg))
+        setError(msg)
       }
     } catch (err: any) {
       setError(err.message || "Login failed. Please try again.")
@@ -284,7 +288,19 @@ export default function LoginPage() {
                       className="border-destructive/50 bg-destructive/10"
                     >
                       <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>{error}</AlertDescription>
+                      <AlertDescription className="space-y-2">
+                        <span>{error}</span>
+                        {showVerifyCta ? (
+                          <span className="block text-foreground/90">
+                            <Link
+                              href={`/auth/email-otp/verify-email?email=${encodeURIComponent(email.trim())}`}
+                              className="font-medium text-primary underline-offset-4 hover:underline"
+                            >
+                              Enter the verification code from your email
+                            </Link>
+                          </span>
+                        ) : null}
+                      </AlertDescription>
                     </Alert>
                   )}
 

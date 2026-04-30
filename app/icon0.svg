@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" classname="w-12 h-12" width="200" height="200"><metadata><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/"><rdf:Description><dc:creator>RealFaviconGenerator</dc:creator><dc:source>https://realfavicongenerator.net</dc:source></rdf:Description></rdf:RDF></metadata><defs>
+    <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color: #FF5733; stop-opacity: 1;"></stop>
+      <stop offset="100%" style="stop-color: #C70039; stop-opacity: 1;"></stop>
+    </linearGradient>
+    <filter id="f1">
+      <feOffset result="offOut" in="SourceAlpha" dx="2" dy="2"></feOffset>
+      <feGaussianBlur in="offOut" result="blurOut" stdDeviation="1"></feGaussianBlur>
+      <feBlend in="SourceGraphic" in2="blurOut" mode="normal"></feBlend>
+    </filter>
+  </defs><g filter="url(#f1)">
+    <polygon points="0,0 100,0 50,100" fill="url(#gradient1)"></polygon>
+    <polygon points="100,0 200,0 150,100" fill="url(#gradient1)"></polygon>
+    <polygon points="50,100 150,100 100,200" fill="url(#gradient1)"></polygon>
+  </g></svg>

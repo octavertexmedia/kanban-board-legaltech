@@ -18,6 +18,10 @@ export const metadata = {
     `Project management for OctaVertex Media: internal delivery and client-visible status updates. ${OCTAVERTEX_MARKETING_URL}`,
   keywords:
     "OctaVertex, project management, client portal, kanban, OctaVertex Media",
+  applicationName: "Vertex PM",
+  appleWebApp: {
+    title: "Vertex PM",
+  },
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL || "https://kanban.vertexcrm.in"
   ),
