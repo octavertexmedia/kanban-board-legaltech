@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npx prisma generate && next build",
+    "build": "node scripts/prisma-with-env.cjs migrate deploy && npx prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "npx prisma generate",

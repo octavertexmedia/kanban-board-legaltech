@@ -240,19 +240,21 @@ async function main() {
     })
     console.log('✅ Created project status updates')
 
-    // ─── Boards & Columns ───────────────────────────────
+    // ─── Boards & Columns (same 6 columns as new projects via API) ───
+    const standardColumns = [
+        { title: 'Backlog', position: 0, color: '#94a3b8' },
+        { title: 'To Do', position: 1, color: '#6366f1' },
+        { title: 'In Progress', position: 2, color: '#f59e0b' },
+        { title: 'Review', position: 3, color: '#8b5cf6' },
+        { title: 'QA Testing', position: 4, color: '#ec4899' },
+        { title: 'Done', position: 5, color: '#10b981' },
+    ]
+
     const board1 = await prisma.board.create({
         data: {
             title: 'Website Redesign Board',
             projectId: project1.id,
-            columns: {
-                create: [
-                    { title: 'To Do', position: 0, color: '#6366f1' },
-                    { title: 'In Progress', position: 1, color: '#f59e0b' },
-                    { title: 'Review', position: 2, color: '#8b5cf6' },
-                    { title: 'Done', position: 3, color: '#10b981' },
-                ],
-            },
+            columns: { create: standardColumns },
         },
         include: { columns: true },
     })
@@ -261,14 +263,7 @@ async function main() {
         data: {
             title: 'Client Portal Board',
             projectId: project2.id,
-            columns: {
-                create: [
-                    { title: 'Backlog', position: 0, color: '#94a3b8' },
-                    { title: 'To Do', position: 1, color: '#6366f1' },
-                    { title: 'In Progress', position: 2, color: '#f59e0b' },
-                    { title: 'Done', position: 3, color: '#10b981' },
-                ],
-            },
+            columns: { create: standardColumns },
         },
         include: { columns: true },
     })
@@ -277,14 +272,7 @@ async function main() {
         data: {
             title: 'Mobile App Board',
             projectId: project3.id,
-            columns: {
-                create: [
-                    { title: 'To Do', position: 0, color: '#6366f1' },
-                    { title: 'In Progress', position: 1, color: '#f59e0b' },
-                    { title: 'QA Testing', position: 2, color: '#ec4899' },
-                    { title: 'Done', position: 3, color: '#10b981' },
-                ],
-            },
+            columns: { create: standardColumns },
         },
         include: { columns: true },
     })
@@ -300,7 +288,7 @@ async function main() {
                 priority: Priority.HIGH,
                 dueDate: new Date('2026-03-15'),
                 position: 0,
-                columnId: board1.columns[0].id,
+                columnId: board1.columns[1].id,
                 assigneeId: users[2].id,
                 creatorId: users[1].id,
                 labels: { create: [{ labelId: labels[1].id }] },
@@ -314,7 +302,7 @@ async function main() {
                 priority: Priority.MEDIUM,
                 dueDate: new Date('2026-03-10'),
                 position: 1,
-                columnId: board1.columns[0].id,
+                columnId: board1.columns[1].id,
                 assigneeId: users[3].id,
                 creatorId: users[1].id,
                 labels: { create: [{ labelId: labels[2].id }] },
@@ -342,7 +330,7 @@ async function main() {
                 priority: Priority.HIGH,
                 dueDate: new Date('2026-03-08'),
                 position: 0,
-                columnId: board1.columns[1].id,
+                columnId: board1.columns[2].id,
                 assigneeId: users[5].id,
                 creatorId: users[1].id,
                 labels: { create: [{ labelId: labels[0].id }] },
@@ -370,7 +358,7 @@ async function main() {
                 priority: Priority.MEDIUM,
                 dueDate: new Date('2026-03-09'),
                 position: 0,
-                columnId: board1.columns[2].id,
+                columnId: board1.columns[3].id,
                 assigneeId: users[5].id,
                 creatorId: users[1].id,
                 labels: { create: [{ labelId: labels[1].id }] },
@@ -390,7 +378,7 @@ async function main() {
                 priority: Priority.HIGH,
                 dueDate: new Date('2026-02-28'),
                 position: 0,
-                columnId: board1.columns[3].id,
+                columnId: board1.columns[5].id,
                 assigneeId: users[2].id,
                 creatorId: users[1].id,
                 labels: { create: [{ labelId: labels[1].id }] },
@@ -468,7 +456,7 @@ async function main() {
                 priority: Priority.URGENT,
                 dueDate: new Date('2026-03-01'),
                 position: 0,
-                columnId: board3.columns[0].id,
+                columnId: board3.columns[1].id,
                 assigneeId: users[5].id,
                 creatorId: users[1].id,
             },
@@ -481,7 +469,7 @@ async function main() {
                 priority: Priority.HIGH,
                 dueDate: new Date('2026-03-10'),
                 position: 0,
-                columnId: board3.columns[1].id,
+                columnId: board3.columns[2].id,
                 assigneeId: users[5].id,
                 creatorId: users[1].id,
             },

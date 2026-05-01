@@ -15,6 +15,11 @@ import { toast } from "sonner"
 import type { Board, Ticket } from "@/lib/types"
 
 const columnColors: Record<string, { bg: string; border: string; badge: string }> = {
+  "Backlog": {
+    bg: "bg-zinc-50 dark:bg-zinc-900/50",
+    border: "border-t-zinc-500",
+    badge: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
+  },
   "To Do": {
     bg: "bg-slate-50 dark:bg-slate-900/50",
     border: "border-t-slate-400",
@@ -29,6 +34,11 @@ const columnColors: Record<string, { bg: string; border: string; badge: string }
     bg: "bg-amber-50/50 dark:bg-amber-950/20",
     border: "border-t-amber-500",
     badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+  },
+  "QA Testing": {
+    bg: "bg-pink-50/50 dark:bg-pink-950/20",
+    border: "border-t-pink-500",
+    badge: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300",
   },
   "Done": {
     bg: "bg-emerald-50/50 dark:bg-emerald-950/20",

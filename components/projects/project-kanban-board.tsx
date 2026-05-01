@@ -59,7 +59,14 @@ interface ProjectKanbanBoardProps {
 }
 
 // Column ordering and style config
-const COLUMN_ORDER = ["To Do", "Backlog", "In Progress", "Review", "QA Testing", "Done"]
+const COLUMN_ORDER = [
+  "Backlog",
+  "To Do",
+  "In Progress",
+  "Review",
+  "QA Testing",
+  "Done",
+]
 
 const columnColors: Record<string, { bg: string; border: string; badge: string }> = {
   "To Do": { bg: "bg-slate-50 dark:bg-slate-900/50", border: "border-t-slate-400", badge: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300" },

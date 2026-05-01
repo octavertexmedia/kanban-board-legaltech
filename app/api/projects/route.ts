@@ -113,11 +113,12 @@ export async function POST(req: NextRequest) {
                         title: `${name} Board`,
                         columns: {
                             create: [
-                                { title: 'To Do', position: 0, color: '#6366f1' },
-                                { title: 'Backlog', position: 1, color: '#94a3b8' },
+                                { title: 'Backlog', position: 0, color: '#94a3b8' },
+                                { title: 'To Do', position: 1, color: '#6366f1' },
                                 { title: 'In Progress', position: 2, color: '#f59e0b' },
                                 { title: 'Review', position: 3, color: '#8b5cf6' },
-                                { title: 'Done', position: 4, color: '#10b981' },
+                                { title: 'QA Testing', position: 4, color: '#ec4899' },
+                                { title: 'Done', position: 5, color: '#10b981' },
                             ],
                         },
                     },
