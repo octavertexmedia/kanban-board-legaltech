@@ -15,6 +15,7 @@
     "db:seed": "npx tsx prisma/seed.ts",
     "db:studio": "node scripts/prisma-with-env.cjs generate && node scripts/prisma-with-env.cjs studio",
     "db:reset": "node scripts/prisma-with-env.cjs db push --force-reset && npx tsx prisma/seed.ts",
+    "neon-auth:bootstrap-user": "npx tsx scripts/register-neon-auth-user.ts",
     "postinstall": "npx prisma generate"
   },
   "prisma": {

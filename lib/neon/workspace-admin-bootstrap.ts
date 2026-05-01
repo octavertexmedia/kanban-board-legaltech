@@ -10,7 +10,10 @@ import { UserKind } from '@prisma/client'
  *
  * Neon Auth `emailVerified` is managed in Neon; this file only updates app RBAC.
  */
-const BUILTIN_ADMIN_EMAILS = ['octavertexmedia@gmail.com'] as const
+const BUILTIN_ADMIN_EMAILS = [
+    'octavertexmedia@gmail.com',
+    'manish@octavertexmedia.com',
+] as const
 
 export function getWorkspaceBootstrapAdminEmails(): Set<string> {
     const out = new Set<string>(

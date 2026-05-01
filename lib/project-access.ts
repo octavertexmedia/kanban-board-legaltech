@@ -2,8 +2,13 @@ import type { PrismaClient } from '@prisma/client'
 import { UserKind, ProjectMemberRole } from '@prisma/client'
 import type { JWTPayload } from '@/lib/authorization'
 
+/** Admins, super-admins, and managers see every project on `/projects` and can open any project. */
 export function hasGlobalProjectAccess(payload: JWTPayload): boolean {
-    return payload.role === 'SUPER_ADMIN' || payload.role === 'ADMIN'
+    return (
+        payload.role === 'SUPER_ADMIN' ||
+        payload.role === 'ADMIN' ||
+        payload.role === 'MANAGER'
+    )
 }
 
 export async function getAccessibleProjectIds(

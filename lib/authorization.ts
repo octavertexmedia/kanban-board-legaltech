@@ -84,3 +84,8 @@ export function canManage(role: Role): boolean {
 export function isAdminOrHigher(role: Role): boolean {
     return isRoleHigherOrEqual(role, 'ADMIN')
 }
+
+/** Archive / delete project / restore from archived — Admin or Super Admin only. */
+export function isWorkspaceAdminRole(role: Role): boolean {
+    return role === 'ADMIN' || role === 'SUPER_ADMIN'
+}

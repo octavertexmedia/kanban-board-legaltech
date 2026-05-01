@@ -22,6 +22,7 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata = {
+  manifest: "/manifest.json",
   title: `${APP_DISPLAY_NAME} — OctaVertex Media`,
   description:
     `Project management for OctaVertex Media: internal delivery and client-visible status updates. ${OCTAVERTEX_MARKETING_URL}`,

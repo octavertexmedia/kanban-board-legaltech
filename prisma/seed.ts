@@ -4,6 +4,7 @@ import { createRequire } from 'node:module'
 const require = createRequire(import.meta.url)
 require('../scripts/load-database-env.cjs').loadDatabaseEnv()
 
+import { randomBytes } from 'node:crypto'
 import {
     PrismaClient,
     Role,
@@ -15,7 +16,7 @@ import {
     ProjectMemberRole,
     StatusUpdateVisibility,
 } from '@prisma/client'
-import bcrypt from 'bcryptjs'
+import { hashPassword } from '../lib/authorization'
 
 const prisma = new PrismaClient()
 
@@ -39,22 +40,19 @@ async function main() {
     await prisma.project.deleteMany()
     await prisma.user.deleteMany()
 
-    // ─── Users (hardcoded credentials) ───────────────────
-    const hashedPasswords = {
-        admin: await bcrypt.hash('Admin@2026', 12),
-        manager: await bcrypt.hash('Manager@2026', 12),
-        engineer: await bcrypt.hash('Engineer@2026', 12),
-        designer: await bcrypt.hash('Designer@2026', 12),
-        researcher: await bcrypt.hash('Researcher@2026', 12),
-        client: await bcrypt.hash('Client@2026', 12),
-    }
+    // ─── Users ─────────────────────────────────────────────
+    // `User.password` is required by Prisma but sign-in is Neon Auth only — use an
+    // opaque placeholder (same idea as `ensureAppUserFromNeonSession`), not app passwords.
+    const prismaPasswordPlaceholder = await hashPassword(
+        randomBytes(32).toString('hex'),
+    )
 
     const users = await Promise.all([
         prisma.user.create({
             data: {
                 name: 'Admin User',
                 email: 'admin@octavertexmedia.demo',
-                password: hashedPasswords.admin,
+                password: prismaPasswordPlaceholder,
                 role: Role.ADMIN,
                 userKind: UserKind.INTERNAL,
                 status: UserStatus.ACTIVE,
@@ -65,7 +63,7 @@ async function main() {
             data: {
                 name: 'John Doe',
                 email: 'john.doe@octavertexmedia.demo',
-                password: hashedPasswords.manager,
+                password: prismaPasswordPlaceholder,
                 role: Role.MANAGER,
                 userKind: UserKind.INTERNAL,
                 status: UserStatus.ACTIVE,
@@ -76,7 +74,7 @@ async function main() {
             data: {
                 name: 'Jane Smith',
                 email: 'jane.smith@octavertexmedia.demo',
-                password: hashedPasswords.engineer,
+                password: prismaPasswordPlaceholder,
                 role: Role.ENGINEER,
                 userKind: UserKind.INTERNAL,
                 status: UserStatus.ACTIVE,
@@ -87,7 +85,7 @@ async function main() {
             data: {
                 name: 'Alex Johnson',
                 email: 'alex.johnson@octavertexmedia.demo',
-                password: hashedPasswords.designer,
+                password: prismaPasswordPlaceholder,
                 role: Role.DESIGNER,
                 userKind: UserKind.INTERNAL,
                 status: UserStatus.ACTIVE,
@@ -98,7 +96,7 @@ async function main() {
             data: {
                 name: 'Sarah Williams',
                 email: 'sarah.williams@octavertexmedia.demo',
-                password: hashedPasswords.researcher,
+                password: prismaPasswordPlaceholder,
                 role: Role.RESEARCHER,
                 userKind: UserKind.INTERNAL,
                 status: UserStatus.INACTIVE,
@@ -109,7 +107,7 @@ async function main() {
             data: {
                 name: 'Michael Brown',
                 email: 'michael.brown@octavertexmedia.demo',
-                password: hashedPasswords.engineer,
+                password: prismaPasswordPlaceholder,
                 role: Role.ENGINEER,
                 userKind: UserKind.INTERNAL,
                 status: UserStatus.ACTIVE,
@@ -120,9 +118,31 @@ async function main() {
             data: {
                 name: 'Acme Corp Client',
                 email: 'client@acmecorp.demo',
-                password: hashedPasswords.client,
+                password: prismaPasswordPlaceholder,
                 role: Role.VIEWER,
                 userKind: UserKind.CLIENT,
+                status: UserStatus.ACTIVE,
+                avatar: null,
+            },
+        }),
+        prisma.user.create({
+            data: {
+                name: 'OctaVertex Media',
+                email: 'octavertexmedia@gmail.com',
+                password: prismaPasswordPlaceholder,
+                role: Role.ADMIN,
+                userKind: UserKind.INTERNAL,
+                status: UserStatus.ACTIVE,
+                avatar: null,
+            },
+        }),
+        prisma.user.create({
+            data: {
+                name: 'Manish Kumar',
+                email: 'manish@octavertexmedia.com',
+                password: prismaPasswordPlaceholder,
+                role: Role.ADMIN,
+                userKind: UserKind.INTERNAL,
                 status: UserStatus.ACTIVE,
                 avatar: null,
             },
@@ -630,15 +650,17 @@ async function main() {
     console.log('✅ Created notifications')
 
     console.log('\n🎉 Database seeded successfully!')
-    console.log('\n📋 Employee Credentials:')
+    console.log('\n📋 Seeded users (Prisma roles — sign-in passwords are managed by Neon Auth, not printed here):')
     console.log('─────────────────────────────────────────')
-    console.log('Admin:      admin@octavertexmedia.demo       / Admin@2026')
-    console.log('Manager:    john.doe@octavertexmedia.demo     / Manager@2026')
-    console.log('Engineer:   jane.smith@octavertexmedia.demo   / Engineer@2026')
-    console.log('Designer:   alex.johnson@octavertexmedia.demo / Designer@2026')
-    console.log('Researcher: sarah.williams@octavertexmedia.demo / Researcher@2026')
-    console.log('Engineer:   michael.brown@octavertexmedia.demo / Engineer@2026')
-    console.log('Client:     client@acmecorp.demo          / Client@2026  (Client Portal Development)')
+    console.log('Admin:      admin@octavertexmedia.demo')
+    console.log('Admin:      octavertexmedia@gmail.com')
+    console.log('Admin:      manish@octavertexmedia.com')
+    console.log('Manager:    john.doe@octavertexmedia.demo')
+    console.log('Engineer:   jane.smith@octavertexmedia.demo')
+    console.log('Designer:   alex.johnson@octavertexmedia.demo')
+    console.log('Researcher: sarah.williams@octavertexmedia.demo')
+    console.log('Engineer:   michael.brown@octavertexmedia.demo')
+    console.log('Client:     client@acmecorp.demo  (Client Portal Development)')
 }
 
 main()

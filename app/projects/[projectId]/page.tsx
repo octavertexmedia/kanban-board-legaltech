@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams } from "next/navigation"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { ProjectKanbanBoard } from "@/components/projects/project-kanban-board"
+import { ProjectMembersPanel } from "@/components/projects/project-members-panel"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -24,7 +25,14 @@ interface BoardProject {
   members: Array<{
     id: string
     role: string
-    user: { id: string; name: string; email: string; role: string; avatar: string | null }
+    user: {
+      id: string
+      name: string
+      email: string
+      role: string
+      avatar: string | null
+      userKind?: string
+    }
   }>
   board: {
     id: string
@@ -40,28 +48,37 @@ export default function ProjectPage() {
   const [loading, setLoading] = useState(true)
   const { isAuthenticated, isClientUser } = useAuth()
 
-  useEffect(() => {
+  const loadProject = useCallback(() => {
     if (!projectId) return
     setLoading(true)
     fetch(`/api/projects/${projectId}`, {
       credentials: 'include',
     })
-      .then(r => r.json())
-      .then(data => {
+      .then((r) => r.json())
+      .then((data) => {
         if (data.project) {
           setProject(data.project)
         } else {
+          setProject(null)
           toast.error("Project not found")
         }
       })
       .catch(() => toast.error("Failed to load project"))
       .finally(() => setLoading(false))
-  }, [projectId, isAuthenticated])
+  }, [projectId])
+
+  useEffect(() => {
+    loadProject()
+  }, [loadProject, isAuthenticated])
 
   const statusColor =
-    project?.status === "ACTIVE" ? "bg-emerald-100 text-emerald-800" :
-      project?.status === "COMPLETED" ? "bg-blue-100 text-blue-800" :
-        "bg-gray-100 text-gray-800"
+    project?.status === "ACTIVE"
+      ? "bg-emerald-100 text-emerald-800"
+      : project?.status === "COMPLETED"
+        ? "bg-blue-100 text-blue-800"
+        : project?.status === "ARCHIVED"
+          ? "bg-muted text-muted-foreground"
+          : "bg-gray-100 text-gray-800"
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -139,6 +156,12 @@ export default function ProjectPage() {
                 </div>
               </div>
             </div>
+
+            <ProjectMembersPanel
+              projectId={project.id}
+              members={project.members}
+              onMembersChange={loadProject}
+            />
 
             <ProjectStatusUpdatesPanel projectId={project.id} readOnly={isClientUser} />
 
