@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
@@ -18,7 +17,13 @@ type SearchResult = {
   icon: React.ElementType
 }
 
-export function GlobalSearch() {
+interface GlobalSearchProps {
+  /** Dense trigger for dashboard header (Jira-style). */
+  variant?: "default" | "compact"
+  className?: string
+}
+
+export function GlobalSearch({ variant = "default", className }: GlobalSearchProps) {
   const [open, setOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [query, setQuery] = useState("")
@@ -26,14 +31,13 @@ export function GlobalSearch() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
+  const compact = variant === "compact"
 
-  // Keyboard shortcut to open search (Cmd+K / Ctrl+K)
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if ((e.key === "k" && (e.metaKey || e.ctrlKey)) || e.key === "/") {
         e.preventDefault()
 
-        // Check window width to decide which search to open
         if (window.innerWidth < 768) {
           setMobileOpen(true)
         } else {
@@ -46,7 +50,6 @@ export function GlobalSearch() {
     return () => document.removeEventListener("keydown", down)
   }, [])
 
-  // Focus input when popover/dialog opens
   useEffect(() => {
     if ((open || mobileOpen) && inputRef.current) {
       setTimeout(() => {
@@ -55,7 +58,6 @@ export function GlobalSearch() {
     }
   }, [open, mobileOpen])
 
-  // Real API search with debounce
   useEffect(() => {
     if (query.length > 1) {
       setIsLoading(true)
@@ -84,7 +86,7 @@ export function GlobalSearch() {
 
           setResults(mappedResults)
         } catch (error) {
-          console.error('Search error:', error)
+          console.error("Search error:", error)
           setResults([])
         } finally {
           setIsLoading(false)
@@ -105,50 +107,48 @@ export function GlobalSearch() {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case "project": return "bg-blue-100 text-blue-800"
-      case "ticket": return "bg-purple-100 text-purple-800"
-      case "meeting": return "bg-green-100 text-green-800"
-      case "article": return "bg-yellow-100 text-yellow-800"
-      case "user": return "bg-pink-100 text-pink-800"
-      default: return "bg-gray-100 text-gray-800"
+      case "project":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200"
+      case "ticket":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-200"
+      case "meeting":
+        return "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200"
+      case "article":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-200"
+      case "user":
+        return "bg-pink-100 text-pink-800 dark:bg-pink-950 dark:text-pink-200"
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
     }
   }
 
-  // Search content to render in both popover and dialog
   const SearchContent = (
     <Command className="rounded-lg border shadow-md">
-      <div className="flex items-center border-b px-3">
-        <Search className="h-4 w-4 shrink-0 opacity-50 mr-2" />
+      <div className={cn("flex items-center border-b px-3", compact && "px-2")}>
+        <Search className={cn("shrink-0 opacity-50 mr-2", compact ? "h-3.5 w-3.5" : "h-4 w-4")} />
         <CommandInput
           ref={inputRef}
-          placeholder="Search across all resources..."
+          placeholder="Search projects, tickets, meetings…"
           value={query}
           onValueChange={setQuery}
-          className="flex-1 py-3 outline-none"
+          className={cn("flex-1 outline-none", compact ? "py-2 text-sm" : "py-3")}
         />
-        {query && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setQuery("")}
-            className="h-6 w-6"
-          >
+        {query ? (
+          <Button variant="ghost" size="icon" onClick={() => setQuery("")} className="h-6 w-6 shrink-0">
             <X className="h-3 w-3" />
           </Button>
-        )}
+        ) : null}
       </div>
       <CommandList>
         {isLoading && (
-          <div className="py-6 text-center text-sm">
-            <div className="animate-pulse">Searching...</div>
+          <div className={cn("text-center text-muted-foreground", compact ? "py-4 text-xs" : "py-6 text-sm")}>
+            <div className="animate-pulse">Searching…</div>
           </div>
         )}
-        {!isLoading && query && !results.length && (
-          <CommandEmpty>No results found.</CommandEmpty>
-        )}
+        {!isLoading && query && !results.length && <CommandEmpty>No results found.</CommandEmpty>}
         {!isLoading && !query && (
-          <div className="py-4 px-2 text-center text-sm text-muted-foreground">
-            Start typing to search across projects, tickets, meetings, articles, and users...
+          <div className={cn("px-2 text-center text-muted-foreground", compact ? "py-3 text-xs" : "py-4 text-sm")}>
+            Type to search. Shortcut: ⌘K
           </div>
         )}
         {results.length > 0 && (
@@ -158,17 +158,15 @@ export function GlobalSearch() {
                 key={item.id}
                 value={item.id}
                 onSelect={() => handleSelect(item)}
-                className="cursor-pointer"
+                className={cn("cursor-pointer", compact && "text-sm py-2")}
               >
-                <div className="flex items-center gap-2">
-                  <div className={cn("p-1 rounded", getTypeColor(item.type))}>
-                    <item.icon className="h-3.5 w-3.5" />
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className={cn("p-1 rounded shrink-0", getTypeColor(item.type))}>
+                    <item.icon className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} />
                   </div>
-                  <span>{item.title}</span>
+                  <span className="truncate">{item.title}</span>
                 </div>
-                <span className="ml-auto text-xs capitalize text-muted-foreground">
-                  {item.type}
-                </span>
+                <span className="ml-auto text-[10px] capitalize text-muted-foreground shrink-0">{item.type}</span>
               </CommandItem>
             ))}
           </CommandGroup>
@@ -177,38 +175,32 @@ export function GlobalSearch() {
     </Command>
   )
 
-  return (
-    <>
-      {/* Desktop search - popover */}
-      <div className="relative w-full">
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              className="w-full justify-between bg-white/90 dark:bg-gray-800/90 border-white/20 text-left font-normal"
-            >
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Search className="h-4 w-4" />
-                <span className="line-clamp-1">Search...</span>
-              </div>
-              <div className="hidden md:flex items-center text-xs text-muted-foreground rounded border px-1.5 py-0.5">
-                <span className="text-xs">⌘K</span>
-              </div>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="p-0 w-[calc(100vw-2rem)] max-w-lg" align="start">
-            {SearchContent}
-          </PopoverContent>
-        </Popover>
-      </div>
+  const triggerClass = compact
+    ? "h-8 w-full justify-start gap-2 border-border bg-background text-xs font-normal text-muted-foreground hover:bg-muted/50"
+    : "w-full justify-between bg-white/90 dark:bg-gray-800/90 border-white/20 text-left font-normal"
 
-      {/* Mobile search - full dialog */}
-      <Dialog open={mobileOpen} onOpenChange={setMobileOpen}>
-        <DialogContent className="sm:max-w-lg p-0 gap-0">
+  return (
+    <div className={cn("relative w-full", className)}>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" role="combobox" className={triggerClass}>
+            <div className="flex items-center gap-2 min-w-0">
+              <Search className={cn("shrink-0 opacity-60", compact ? "h-3.5 w-3.5" : "h-4 w-4")} />
+              <span className="line-clamp-1">{compact ? "Search…" : "Search..."}</span>
+            </div>
+            <kbd className="hidden sm:inline-flex pointer-events-none h-5 items-center gap-0.5 rounded border border-border bg-muted px-1 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+              ⌘K
+            </kbd>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="p-0 w-[calc(100vw-2rem)] max-w-lg" align="start">
           {SearchContent}
-        </DialogContent>
+        </PopoverContent>
+      </Popover>
+
+      <Dialog open={mobileOpen} onOpenChange={setMobileOpen}>
+        <DialogContent className="sm:max-w-lg p-0 gap-0">{SearchContent}</DialogContent>
       </Dialog>
-    </>
+    </div>
   )
 }

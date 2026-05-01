@@ -4,9 +4,8 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2 } from "lucide-react"
+import { Loader2, Activity } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { useAuth } from "@/lib/auth-context"
 
@@ -36,10 +35,10 @@ export function ActivityFeed() {
 
   useEffect(() => {
     fetch("/api/dashboard/stats", {
-      credentials: 'include',
+      credentials: "include",
     })
-      .then(r => r.json())
-      .then(data => {
+      .then((r) => r.json())
+      .then((data) => {
         if (data.recentActivity) {
           setActivities(data.recentActivity)
         }
@@ -48,98 +47,98 @@ export function ActivityFeed() {
       .finally(() => setIsLoading(false))
   }, [isAuthenticated])
 
-  const filteredActivities = filter === "all"
-    ? activities
-    : activities.filter(a => a.entity === filter)
+  const filteredActivities = filter === "all" ? activities : activities.filter((a) => a.entity === filter)
 
   const getActionColor = (action: string) => {
     switch (action) {
-      case "created": return "text-green-600"
-      case "moved": return "text-blue-600"
-      case "deleted": return "text-red-600"
-      case "updated": return "text-amber-600"
-      case "scheduled": return "text-purple-600"
-      case "completed": return "text-emerald-600"
-      default: return "text-muted-foreground"
+      case "created":
+        return "text-green-600 dark:text-green-400"
+      case "moved":
+        return "text-blue-600 dark:text-blue-400"
+      case "deleted":
+        return "text-red-600 dark:text-red-400"
+      case "updated":
+        return "text-amber-600 dark:text-amber-400"
+      case "scheduled":
+        return "text-purple-600 dark:text-purple-400"
+      case "completed":
+        return "text-emerald-600 dark:text-emerald-400"
+      default:
+        return "text-muted-foreground"
     }
   }
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center h-[200px]">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <Card className="border border-border shadow-none">
+        <CardContent className="flex items-center justify-center h-32">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </CardContent>
       </Card>
     )
   }
 
   return (
-    <Card className="border-0 shadow-xl shadow-black/5 ring-1 ring-border/50 bg-card/60 backdrop-blur-xl transition-all duration-300 hover:shadow-2xl">
-      <CardHeader className="pb-3 border-b border-border/50">
-        <CardTitle className="text-lg font-bold flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
-          </div>
-          Recent Activity
+    <Card className="border border-border shadow-none">
+      <CardHeader className="py-2 px-3 space-y-2 border-b border-border">
+        <CardTitle className="text-xs font-semibold flex items-center gap-1.5">
+          <Activity className="h-3.5 w-3.5 text-muted-foreground" />
+          Recent activity
         </CardTitle>
-        <Tabs defaultValue="all" value={filter} onValueChange={setFilter} className="w-full mt-4">
-          <TabsList className="grid grid-cols-4 bg-muted/50 p-1 rounded-xl">
-            <TabsTrigger value="all" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">All</TabsTrigger>
-            <TabsTrigger value="ticket" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Tickets</TabsTrigger>
-            <TabsTrigger value="meeting" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Meetings</TabsTrigger>
-            <TabsTrigger value="user" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Users</TabsTrigger>
+        <Tabs value={filter} onValueChange={setFilter} className="w-full">
+          <TabsList className="h-7 w-full grid grid-cols-4 bg-muted/50 p-0.5 rounded-md gap-0">
+            <TabsTrigger value="all" className="text-[10px] px-1 h-6 rounded-sm">
+              All
+            </TabsTrigger>
+            <TabsTrigger value="ticket" className="text-[10px] px-1 h-6 rounded-sm">
+              Tickets
+            </TabsTrigger>
+            <TabsTrigger value="meeting" className="text-[10px] px-1 h-6 rounded-sm">
+              Meet
+            </TabsTrigger>
+            <TabsTrigger value="user" className="text-[10px] px-1 h-6 rounded-sm">
+              Users
+            </TabsTrigger>
           </TabsList>
         </Tabs>
       </CardHeader>
-      <CardContent className="space-y-0 p-0 max-h-[400px] overflow-y-auto custom-scrollbar">
+      <CardContent className="p-0 max-h-[min(320px,42vh)] overflow-y-auto">
         {filteredActivities.length > 0 ? (
-          filteredActivities.map((activity, idx) => (
-            <div key={activity.id} className="group relative border-b border-border/50 last:border-b-0 p-4 hover:bg-muted/30 transition-colors flex gap-4">
-              <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 scale-y-0 group-hover:scale-y-100 transition-transform origin-center" />
-              <div className="relative">
-                {idx !== filteredActivities.length - 1 && (
-                  <div className="absolute top-9 left-1/2 -translate-x-1/2 w-px h-[calc(100%+16px)] bg-border/50" />
-                )}
-                <Avatar className="h-10 w-10 ring-2 ring-background shadow-sm transition-transform group-hover:scale-105">
-                  <AvatarImage src={activity.user?.avatar || undefined} alt={activity.user?.name} />
-                  <AvatarFallback className="text-xs font-bold bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
-                    {activity.user?.name?.charAt(0) || '?'}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-              <div className="space-y-1.5 flex-1 pt-1 min-w-0">
-                <p className="text-sm leading-snug">
-                  <span className="font-semibold text-foreground">{activity.user?.name}</span>{" "}
-                  <span className={`font-medium ${getActionColor(activity.action)}`}>{activity.action}</span>{" "}
-                  {activity.details && (
-                    <span className="text-muted-foreground">{activity.details}</span>
-                  )}
+          filteredActivities.map((activity) => (
+            <div
+              key={activity.id}
+              className="border-b border-border last:border-b-0 px-3 py-2 hover:bg-muted/30 flex gap-2.5"
+            >
+              <Avatar className="h-7 w-7 shrink-0">
+                <AvatarImage src={activity.user?.avatar || undefined} alt={activity.user?.name} />
+                <AvatarFallback className="text-[10px]">{activity.user?.name?.charAt(0) || "?"}</AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1 pt-0.5">
+                <p className="text-[11px] leading-snug">
+                  <span className="font-medium text-foreground">{activity.user?.name}</span>{" "}
+                  <span className={`font-medium ${getActionColor(activity.action)}`}>{activity.action}</span>
+                  {activity.details ? <span className="text-muted-foreground"> {activity.details}</span> : null}
                 </p>
-                <div className="flex flex-wrap items-center gap-2 text-[10px] font-medium text-muted-foreground mt-1">
-                  <span className="flex items-center gap-1.5 opacity-80">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                <div className="flex flex-wrap items-center gap-1 mt-1">
+                  <span className="text-[9px] text-muted-foreground">
                     {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
                   </span>
-                  <Badge variant="outline" className="bg-muted/50 text-[9px] uppercase tracking-wider px-1.5 py-0">
+                  <Badge variant="outline" className="text-[8px] uppercase px-1 py-0 h-4">
                     {activity.entity}
                   </Badge>
-                  {activity.project && (
-                    <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 text-[9px] uppercase tracking-wider px-1.5 py-0 border-blue-500/20">
+                  {activity.project ? (
+                    <Badge variant="secondary" className="text-[8px] px-1 py-0 h-4 truncate max-w-[120px]">
                       {activity.project.name}
                     </Badge>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>
           ))
         ) : (
-          <div className="text-center py-10">
-            <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl opacity-50">⚡</span>
-            </div>
-            <p className="font-medium text-foreground">No recent activity</p>
-            <p className="text-sm text-muted-foreground mt-1">Check back later for updates</p>
+          <div className="text-center py-8 px-3">
+            <p className="text-xs font-medium text-foreground">No recent activity</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Updates will show here</p>
           </div>
         )}
       </CardContent>

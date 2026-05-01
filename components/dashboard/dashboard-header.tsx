@@ -90,7 +90,7 @@ export function DashboardHeader() {
       initial={{ y: -8, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-xl px-4 md:px-6"
+      className="sticky top-0 z-50 flex h-12 items-center gap-3 border-b bg-background/95 backdrop-blur-sm px-3 md:px-4"
     >
       {/* Mobile nav */}
       <Sheet>
@@ -152,7 +152,7 @@ export function DashboardHeader() {
             <Link
               key={link.href}
               href={link.href}
-              className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${active
+              className={`relative flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-200 ${active
                 ? "text-primary"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 }`}
@@ -174,15 +174,15 @@ export function DashboardHeader() {
       {/* Right section */}
       <div className="ml-auto flex items-center gap-2">
         {/* Desktop search — wider */}
-        <div className="hidden md:block md:w-[400px] lg:w-[500px]">
-          <GlobalSearch />
+        <div className="hidden md:block md:w-[240px] lg:w-[320px]">
+          <GlobalSearch variant="compact" />
         </div>
 
         {/* Mobile search */}
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden h-9 w-9"
+          className="md:hidden h-8 w-8"
           aria-label="Search"
           onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
         >
@@ -193,7 +193,7 @@ export function DashboardHeader() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-9 w-9"
+          className="h-8 w-8"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           aria-label="Toggle theme"
         >
@@ -206,8 +206,8 @@ export function DashboardHeader() {
         {/* User menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-2 ring-transparent hover:ring-primary/20 transition-all" aria-label="User menu">
-              <Avatar className="h-8 w-8">
+            <Button variant="ghost" className="relative h-8 w-8 rounded-full ring-2 ring-transparent hover:ring-primary/20 transition-all p-0" aria-label="User menu">
+              <Avatar className="h-7 w-7">
                 <AvatarImage src={user?.avatar || undefined} alt={user?.name || "User"} />
                 <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-xs font-bold">
                   {user?.name ? getInitials(user.name) : "??"}

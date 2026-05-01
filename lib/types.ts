@@ -80,7 +80,8 @@ export interface KnowledgeArticle {
   content: string
   category: string
   tags: string[]
-  author: User
+  /** API returns id, name, avatar; mock data may include full User. */
+  author: Pick<User, 'id' | 'name' | 'avatar'>
   createdAt: string
   updatedAt: string
   views: number

@@ -1,43 +1,104 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowLeft, Clock, Eye, Tag } from "lucide-react"
-import { initialKnowledgeArticles } from "@/lib/initial-data"
+import { ArrowLeft, Clock, Eye, Pencil, Tag, Trash2 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { KnowledgeArticle } from "@/lib/types"
+import { formatKnowledgeMarkdownHtml } from "@/lib/knowledge-markdown"
+import { useAuth } from "@/lib/auth-context"
+import { CreateArticleDialog } from "@/components/knowledge/create-article-dialog"
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { toast } from "sonner"
 
 export default function ArticlePage() {
   const params = useParams()
   const router = useRouter()
+  const { isAdmin } = useAuth()
+  const articleId = typeof params.articleId === "string" ? params.articleId : ""
+
   const [article, setArticle] = useState<KnowledgeArticle | null>(null)
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+  const [editorOpen, setEditorOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  const loadArticle = useCallback(async () => {
+    if (!articleId) {
+      setLoading(false)
+      setFetchError("Invalid article")
+      return
+    }
+    setLoading(true)
+    setFetchError(null)
+    try {
+      const res = await fetch(`/api/articles/${articleId}`, { credentials: "include" })
+      if (res.status === 404) {
+        setArticle(null)
+        setFetchError(null)
+        return
+      }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || "Failed to load article")
+      }
+      const data = await res.json()
+      setArticle(data.article)
+    } catch (e) {
+      setFetchError(e instanceof Error ? e.message : "Failed to load")
+      setArticle(null)
+    } finally {
+      setLoading(false)
+    }
+  }, [articleId])
 
   useEffect(() => {
-    // Simulate API call to fetch article data
-    setTimeout(() => {
-      const foundArticle = initialKnowledgeArticles.find(a => a.id === params.articleId)
-      if (foundArticle) {
-        setArticle({
-          ...foundArticle,
-          views: foundArticle.views + 1 // Increment view count
-        })
-      }
-      setLoading(false)
-    }, 500)
-  }, [params.articleId])
+    void loadArticle()
+  }, [loadArticle])
 
-  // Format the created date
-  const formattedDate = article ? new Date(article.createdAt).toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric'
-  }) : ''
+  const formattedDate = article
+    ? new Date(article.createdAt).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : ""
+
+  const handleDelete = async () => {
+    if (!article) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/articles/${article.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || "Failed to delete")
+      }
+      toast.success("Article deleted")
+      router.push("/knowledge")
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed")
+    } finally {
+      setDeleting(false)
+      setDeleteOpen(false)
+    }
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -47,12 +108,18 @@ export default function ArticlePage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push('/knowledge')}
+            onClick={() => router.push("/knowledge")}
             className="mb-6 -ml-2"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Knowledge Base
           </Button>
+
+          {fetchError && !loading ? (
+            <div className="rounded-md border border-destructive/50 bg-destructive/5 p-4 text-sm">
+              {fetchError}
+            </div>
+          ) : null}
 
           {loading ? (
             <div className="space-y-4">
@@ -71,12 +138,26 @@ export default function ArticlePage() {
           ) : article ? (
             <>
               <div className="space-y-4 mb-8">
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">{article.category}</Badge>
-                  <div className="flex items-center text-muted-foreground text-sm gap-1">
-                    <Eye className="h-4 w-4" />
-                    <span>{article.views} views</span>
+                <div className="flex flex-wrap items-center gap-2 justify-between">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline">{article.category}</Badge>
+                    <div className="flex items-center text-muted-foreground text-sm gap-1">
+                      <Eye className="h-4 w-4" />
+                      <span>{article.views} views</span>
+                    </div>
                   </div>
+                  {isAdmin ? (
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setEditorOpen(true)}>
+                        <Pencil className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}>
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </Button>
+                    </div>
+                  ) : null}
                 </div>
 
                 <h1 className="text-3xl font-bold">{article.title}</h1>
@@ -98,33 +179,31 @@ export default function ArticlePage() {
 
               <Card className="mb-6">
                 <CardContent className="p-6 prose prose-sm sm:prose-base max-w-none">
-                  <div dangerouslySetInnerHTML={{ __html: formatMarkdown(article.content) }} />
+                  <div dangerouslySetInnerHTML={{ __html: formatKnowledgeMarkdownHtml(article.content) }} />
                 </CardContent>
               </Card>
 
-              {article.tags.length > 0 && (
+              {article.tags.length > 0 ? (
                 <div className="flex items-center gap-2 mt-8">
                   <Tag className="h-4 w-4 text-muted-foreground" />
                   <div className="flex flex-wrap gap-2">
-                    {article.tags.map(tag => (
+                    {article.tags.map((tag) => (
                       <Badge key={tag} variant="secondary">
                         {tag}
                       </Badge>
                     ))}
                   </div>
                 </div>
-              )}
+              ) : null}
             </>
           ) : (
             <div className="flex items-center justify-center h-[60vh]">
               <div className="text-center">
                 <h2 className="text-2xl font-bold">Article not found</h2>
-                <p className="text-muted-foreground mt-2">The article you're looking for doesn't exist or has been removed.</p>
-                <Button
-                  variant="outline"
-                  className="mt-6"
-                  onClick={() => router.push('/knowledge')}
-                >
+                <p className="text-muted-foreground mt-2">
+                  The article you&apos;re looking for doesn&apos;t exist or has been removed.
+                </p>
+                <Button variant="outline" className="mt-6" onClick={() => router.push("/knowledge")}>
                   Go back to Knowledge Base
                 </Button>
               </div>
@@ -132,31 +211,36 @@ export default function ArticlePage() {
           )}
         </div>
       </main>
+
+      {article && isAdmin ? (
+        <>
+          <CreateArticleDialog
+            open={editorOpen}
+            onOpenChange={setEditorOpen}
+            editingArticle={article}
+            onArticleUpdate={(updated) => {
+              setArticle(updated)
+              setEditorOpen(false)
+            }}
+          />
+          <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete this article?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This removes “{article.title}” from the knowledge base. This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+                <Button variant="destructive" disabled={deleting} onClick={() => void handleDelete()}>
+                  {deleting ? "Deleting…" : "Delete"}
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      ) : null}
     </div>
   )
-}
-
-// Reusing the markdown formatter from create-article-dialog
-function formatMarkdown(text: string): string {
-  // Replace headers
-  let html = text
-    .replace(/^### (.*$)/gm, '<h3>$1</h3>')
-    .replace(/^## (.*$)/gm, '<h2>$1</h2>')
-    .replace(/^# (.*$)/gm, '<h1>$1</h1>')
-    // Replace bold and italic
-    .replace(/\*\*(.*)\*\*/gm, '<strong>$1</strong>')
-    .replace(/\*(.*)\*/gm, '<em>$1</em>')
-    // Replace links
-    .replace(/\[([^\[]+)\]\(([^\)]+)\)/gm, '<a href="$2">$1</a>')
-    // Replace lists
-    .replace(/^\s*\n\* (.*)/gm, '<ul>\n<li>$1</li>\n</ul>')
-    .replace(/^\s*\n- (.*)/gm, '<ul>\n<li>$1</li>\n</ul>')
-    // Replace paragraphs
-    .replace(/^\s*\n([^\n]+)\n/gm, '<p>$1</p>\n')
-    // Fix list items
-    .replace(/<\/ul>\s*<ul>/g, '')
-    // Add line breaks
-    .replace(/\n/g, '<br>');
-
-  return html;
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -16,17 +16,28 @@ import { Textarea } from "@/components/ui/textarea"
 import { Loader2 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { users, knowledgeCategories } from "@/lib/initial-data"
+import { knowledgeCategories } from "@/lib/initial-data"
 import { Badge } from "@/components/ui/badge"
 import type { KnowledgeArticle } from "@/lib/types"
+import { formatKnowledgeMarkdownHtml } from "@/lib/knowledge-markdown"
+import { toast } from "sonner"
 
 interface CreateArticleDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onArticleCreate?: (article: KnowledgeArticle) => void
+  /** When set, the dialog edits this article (workspace admins only on the server). */
+  editingArticle?: KnowledgeArticle | null
+  onArticleUpdate?: (article: KnowledgeArticle) => void
 }
 
-export function CreateArticleDialog({ open, onOpenChange, onArticleCreate }: CreateArticleDialogProps) {
+export function CreateArticleDialog({
+  open,
+  onOpenChange,
+  onArticleCreate,
+  editingArticle,
+  onArticleUpdate,
+}: CreateArticleDialogProps) {
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [category, setCategory] = useState("")
@@ -35,62 +46,96 @@ export function CreateArticleDialog({ open, onOpenChange, onArticleCreate }: Cre
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState("write")
 
-  // Current user (for authorship)
-  const currentUser = users[0]
+  const isEdit = Boolean(editingArticle)
+
+  useEffect(() => {
+    if (!open) return
+    if (editingArticle) {
+      setTitle(editingArticle.title)
+      setContent(editingArticle.content)
+      setCategory(editingArticle.category)
+      setTags([...editingArticle.tags])
+    } else {
+      setTitle("")
+      setContent("")
+      setCategory("")
+      setTags([])
+    }
+    setTagInput("")
+    setActiveTab("write")
+  }, [open, editingArticle?.id ?? "new"])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/articles', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title,
-          content,
-          category,
-          tags
+      if (isEdit && editingArticle) {
+        const response = await fetch(`/api/articles/${editingArticle.id}`, {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title,
+            content,
+            category,
+            tags,
+          }),
         })
-      })
 
-      if (!response.ok) {
-        throw new Error('Failed to create article')
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}))
+          throw new Error(err.error || "Failed to update article")
+        }
+
+        const { article } = await response.json()
+        onArticleUpdate?.(article)
+        toast.success("Article updated")
+        onOpenChange(false)
+      } else {
+        const response = await fetch("/api/articles", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title,
+            content,
+            category,
+            tags,
+          }),
+        })
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}))
+          throw new Error(err.error || "Failed to create article")
+        }
+
+        const { article } = await response.json()
+        onArticleCreate?.(article)
+        toast.success("Article created")
+        onOpenChange(false)
       }
-
-      const { article } = await response.json()
-
-      setIsLoading(false)
-      if (onArticleCreate) {
-        onArticleCreate(article)
-      }
-
-      // Reset form
-      setTitle("")
-      setContent("")
-      setCategory("")
-      setTagInput("")
-      setTags([])
-
-      onOpenChange(false)
     } catch (error) {
       console.error(error)
+      toast.error(error instanceof Error ? error.message : "Something went wrong")
+    } finally {
       setIsLoading(false)
     }
   }
 
   const handleAddTag = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && tagInput.trim()) {
+    if (e.key === "Enter" && tagInput.trim()) {
       e.preventDefault()
-      if (!tags.includes(tagInput.trim())) {
-        setTags([...tags, tagInput.trim()])
+      const next = tagInput.trim().toLowerCase()
+      if (!tags.includes(next)) {
+        setTags([...tags, next])
       }
-      setTagInput('')
+      setTagInput("")
     }
   }
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove))
+    setTags(tags.filter((tag) => tag !== tagToRemove))
   }
 
   return (
@@ -98,8 +143,12 @@ export function CreateArticleDialog({ open, onOpenChange, onArticleCreate }: Cre
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Create Knowledge Article</DialogTitle>
-            <DialogDescription>Create a new article for your team's knowledge base.</DialogDescription>
+            <DialogTitle>{isEdit ? "Edit knowledge article" : "Create knowledge article"}</DialogTitle>
+            <DialogDescription>
+              {isEdit
+                ? "Update this article for your team knowledge base."
+                : "Create a new article for your team's knowledge base."}
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
@@ -123,8 +172,10 @@ export function CreateArticleDialog({ open, onOpenChange, onArticleCreate }: Cre
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {knowledgeCategories.map(cat => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  {knowledgeCategories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -143,7 +194,7 @@ export function CreateArticleDialog({ open, onOpenChange, onArticleCreate }: Cre
                   className="mb-2"
                 />
                 <div className="flex flex-wrap gap-2">
-                  {tags.map(tag => (
+                  {tags.map((tag) => (
                     <Badge key={tag} variant="secondary" className="flex items-center gap-1">
                       {tag}
                       <button
@@ -184,7 +235,7 @@ export function CreateArticleDialog({ open, onOpenChange, onArticleCreate }: Cre
                   <TabsContent value="preview">
                     <div className="border rounded-md p-4 min-h-[300px] prose prose-sm max-w-none">
                       {content ? (
-                        <div dangerouslySetInnerHTML={{ __html: formatMarkdown(content) }} />
+                        <div dangerouslySetInnerHTML={{ __html: formatKnowledgeMarkdownHtml(content) }} />
                       ) : (
                         <p className="text-muted-foreground">Nothing to preview yet.</p>
                       )}
@@ -202,10 +253,12 @@ export function CreateArticleDialog({ open, onOpenChange, onArticleCreate }: Cre
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating...
+                  {isEdit ? "Saving…" : "Creating…"}
                 </>
+              ) : isEdit ? (
+                "Save changes"
               ) : (
-                "Create Article"
+                "Create article"
               )}
             </Button>
           </DialogFooter>
@@ -213,29 +266,4 @@ export function CreateArticleDialog({ open, onOpenChange, onArticleCreate }: Cre
       </DialogContent>
     </Dialog>
   )
-}
-
-// Simple function to convert markdown to HTML (basic implementation)
-function formatMarkdown(text: string): string {
-  // Replace headers
-  let html = text
-    .replace(/^### (.*$)/gm, '<h3>$1</h3>')
-    .replace(/^## (.*$)/gm, '<h2>$1</h2>')
-    .replace(/^# (.*$)/gm, '<h1>$1</h1>')
-    // Replace bold and italic
-    .replace(/\*\*(.*)\*\*/gm, '<strong>$1</strong>')
-    .replace(/\*(.*)\*/gm, '<em>$1</em>')
-    // Replace links
-    .replace(/\[([^\[]+)\]\(([^\)]+)\)/gm, '<a href="$2">$1</a>')
-    // Replace lists
-    .replace(/^\s*\n\* (.*)/gm, '<ul>\n<li>$1</li>\n</ul>')
-    .replace(/^\s*\n- (.*)/gm, '<ul>\n<li>$1</li>\n</ul>')
-    // Replace paragraphs
-    .replace(/^\s*\n([^\n]+)\n/gm, '<p>$1</p>\n')
-    // Fix list items
-    .replace(/<\/ul>\s*<ul>/g, '')
-    // Add line breaks
-    .replace(/\n/g, '<br>');
-
-  return html;
 }

@@ -1,33 +1,37 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Plus, Search, BookOpen } from "lucide-react"
 import { CreateArticleDialog } from "@/components/knowledge/create-article-dialog"
 import { ArticleCard } from "@/components/knowledge/article-card"
-import { initialKnowledgeArticles, knowledgeCategories } from "@/lib/initial-data"
+import { knowledgeCategories } from "@/lib/initial-data"
 import { Badge } from "@/components/ui/badge"
 import type { KnowledgeArticle } from "@/lib/types"
+import { useAuth } from "@/lib/auth-context"
 
 export function KnowledgeBase() {
+  const { isAdmin } = useAuth()
   const [searchQuery, setSearchQuery] = useState("")
-  const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [articles, setArticles] = useState<KnowledgeArticle[]>(initialKnowledgeArticles)
+  const [isEditorOpen, setIsEditorOpen] = useState(false)
+  const [editingArticle, setEditingArticle] = useState<KnowledgeArticle | null>(null)
+  const [articles, setArticles] = useState<KnowledgeArticle[]>([])
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-
+  const categoryOptions = useMemo(() => {
+    const fromDb = new Set(articles.map((a) => a.category))
+    return [...new Set([...knowledgeCategories, ...fromDb])].sort()
+  }, [articles])
 
   useEffect(() => {
     async function fetchArticles() {
       try {
-        const response = await fetch('/api/articles')
+        const response = await fetch("/api/articles", { credentials: "include" })
         if (response.ok) {
           const data = await response.json()
-          if (data.articles && data.articles.length > 0) {
-            setArticles(data.articles)
-          }
+          setArticles(Array.isArray(data.articles) ? data.articles : [])
         }
       } catch (error) {
         console.error("Failed to fetch articles:", error)
@@ -38,16 +42,38 @@ export function KnowledgeBase() {
     fetchArticles()
   }, [])
 
-  const handleCreateArticle = (newArticle: KnowledgeArticle) => {
-    setArticles([newArticle, ...articles])
+  const openCreate = () => {
+    setEditingArticle(null)
+    setIsEditorOpen(true)
   }
 
-  // Filter articles by search query and category
-  const filteredArticles = articles.filter(article => {
+  const openEdit = (article: KnowledgeArticle) => {
+    setEditingArticle(article)
+    setIsEditorOpen(true)
+  }
+
+  const handleEditorOpenChange = (open: boolean) => {
+    setIsEditorOpen(open)
+    if (!open) setEditingArticle(null)
+  }
+
+  const handleCreateArticle = (newArticle: KnowledgeArticle) => {
+    setArticles((prev) => [newArticle, ...prev])
+  }
+
+  const handleArticleUpdate = (updated: KnowledgeArticle) => {
+    setArticles((prev) => prev.map((a) => (a.id === updated.id ? updated : a)))
+  }
+
+  const handleArticleDeleted = (articleId: string) => {
+    setArticles((prev) => prev.filter((a) => a.id !== articleId))
+  }
+
+  const filteredArticles = articles.filter((article) => {
     const matchesSearch =
       article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       article.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      article.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      article.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
 
     const matchesCategory = activeCategory ? article.category === activeCategory : true
 
@@ -61,10 +87,12 @@ export function KnowledgeBase() {
           <h1 className="text-2xl font-bold tracking-tight">Knowledge Base</h1>
           <p className="text-muted-foreground">Browse articles and resources for your team</p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)} className="bg-[#2962FF] hover:bg-[#2962FF]/90">
-          <Plus className="mr-2 h-4 w-4" />
-          Create Article
-        </Button>
+        {isAdmin ? (
+          <Button onClick={openCreate} className="bg-[#2962FF] hover:bg-[#2962FF]/90">
+            <Plus className="mr-2 h-4 w-4" />
+            Create Article
+          </Button>
+        ) : null}
       </div>
 
       <div className="flex items-center">
@@ -88,7 +116,7 @@ export function KnowledgeBase() {
         >
           All Categories
         </Badge>
-        {knowledgeCategories.map(category => (
+        {categoryOptions.map((category) => (
           <Badge
             key={category}
             variant={activeCategory === category ? "default" : "outline"}
@@ -100,10 +128,18 @@ export function KnowledgeBase() {
         ))}
       </div>
 
-      {filteredArticles.length > 0 ? (
+      {isLoading ? (
+        <p className="text-sm text-muted-foreground">Loading articles…</p>
+      ) : filteredArticles.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredArticles.map((article) => (
-            <ArticleCard key={article.id} article={article} />
+            <ArticleCard
+              key={article.id}
+              article={article}
+              canManage={isAdmin}
+              onEdit={openEdit}
+              onDeleted={handleArticleDeleted}
+            />
           ))}
         </div>
       ) : (
@@ -113,15 +149,19 @@ export function KnowledgeBase() {
           <p className="text-muted-foreground text-center mt-2">
             {searchQuery
               ? "Try adjusting your search or filter criteria."
-              : "Start by creating your first knowledge article."}
+              : isAdmin
+                ? "Create your first knowledge article."
+                : "No articles yet. Ask an admin to add content."}
           </p>
         </div>
       )}
 
       <CreateArticleDialog
-        open={isCreateOpen}
-        onOpenChange={setIsCreateOpen}
+        open={isEditorOpen}
+        onOpenChange={handleEditorOpenChange}
         onArticleCreate={handleCreateArticle}
+        editingArticle={editingArticle}
+        onArticleUpdate={handleArticleUpdate}
       />
     </div>
   )
