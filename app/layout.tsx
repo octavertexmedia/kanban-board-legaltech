@@ -1,16 +1,24 @@
 import type React from "react"
 import "@/app/globals.css"
-import { Inter } from "next/font/google"
+import { Inter, JetBrains_Mono } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/lib/auth-context"
 import { AppearanceFromPreferences } from "@/components/providers/appearance-from-preferences"
 import { Toaster } from "sonner"
 import { APP_COMPANY_NAME, APP_DISPLAY_NAME, OCTAVERTEX_MARKETING_URL } from "@/lib/brand"
 
+/** Inter approximates Atlassian Sans for web; stack matches SKILL.md (jira-atlassian-design-system). */
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-inter",
+})
+
+/** Atlassian Mono stack uses JetBrains Mono as the open substitute. */
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-mono",
 })
 
 export const metadata = {
@@ -40,11 +48,11 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={inter.variable}>
-      <body className={`${inter.className} bg-background antialiased`}>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${jetbrainsMono.variable}`}>
+      <body className={`${inter.className} bg-background font-sans antialiased`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="light"
           enableSystem
           disableTransitionOnChange
         >
@@ -59,7 +67,7 @@ export default function RootLayout({
             duration={4000}
             toastOptions={{
               style: {
-                borderRadius: "12px",
+                borderRadius: "4px",
               },
             }}
           />

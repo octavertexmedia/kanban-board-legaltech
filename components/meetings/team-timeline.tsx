@@ -329,7 +329,7 @@ export function TeamTimeline() {
                                         <div className="relative w-full flex justify-center mt-1">
                                             <motion.div animate={{ scale: [1, 1.5, 1], opacity: [0.8, 0, 0.8] }} transition={{ duration: 2, repeat: Infinity }} className="absolute w-5 h-5 bg-red-500/40 rounded-full" />
                                             <div className="w-2.5 h-2.5 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,1)] z-10" />
-                                            <div className="absolute top-3 w-px bg-gradient-to-b from-red-500 to-transparent" style={{ height: 'calc(100vh)' }} />
+                                            <div className="absolute top-3 w-px bg-gradient-to-b from-primary to-transparent" style={{ height: 'calc(100vh)' }} />
                                         </div>
                                     </div>
                                 )}

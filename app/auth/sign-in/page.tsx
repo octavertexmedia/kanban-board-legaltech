@@ -143,7 +143,7 @@ export default function LoginPage() {
                 alt="OctaVertex Media"
                 width={200}
                 height={52}
-                className="h-11 w-auto object-contain object-left drop-shadow-sm"
+                className="h-11 w-auto object-contain object-left logo-on-light"
                 unoptimized
                 priority
               />
@@ -253,7 +253,7 @@ export default function LoginPage() {
                     alt="OctaVertex Media"
                     width={180}
                     height={48}
-                    className="h-10 w-auto object-contain"
+                    className="h-10 w-auto object-contain logo-on-light"
                     unoptimized
                     priority
                   />

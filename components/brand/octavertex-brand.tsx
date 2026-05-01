@@ -16,7 +16,7 @@ export function OctaVertexNavbarBrand() {
         alt={`${APP_DISPLAY_NAME} — OctaVertex Media`}
         width={168}
         height={44}
-        className="h-8 md:h-9 w-auto max-w-[140px] md:max-w-[168px] object-contain object-left"
+        className="h-8 md:h-9 w-auto max-w-[140px] md:max-w-[168px] object-contain object-left logo-on-light"
         unoptimized
         priority
       />
@@ -43,7 +43,7 @@ export function OctaVertexLoginFooter() {
             alt="OctaVertex Media"
             width={168}
             height={44}
-            className="h-8 md:h-9 w-auto object-contain opacity-95 hover:opacity-100"
+            className="h-8 md:h-9 w-auto object-contain opacity-95 hover:opacity-100 logo-on-light"
             unoptimized
           />
         </a>

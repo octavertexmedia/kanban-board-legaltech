@@ -98,7 +98,7 @@ export function UserManagement() {
   const getRoleBadgeColor = (role: string) => {
     switch (role?.toUpperCase()) {
       case "SUPER_ADMIN":
-        return "bg-gradient-to-r from-red-600 to-rose-600 text-white border-0"
+        return "bg-gradient-to-r from-[#6554C0] to-[#403294] text-white border-0"
       case "ADMIN":
         return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
       case "MANAGER":

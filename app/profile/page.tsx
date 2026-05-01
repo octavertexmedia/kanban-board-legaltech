@@ -47,7 +47,7 @@ export default function ProfilePage() {
 
   const getRoleBadge = (role: string) => {
     switch (role?.toUpperCase()) {
-      case "SUPER_ADMIN": return "bg-gradient-to-r from-red-600 to-rose-600 text-white border-0"
+      case "SUPER_ADMIN": return "bg-gradient-to-r from-[#6554C0] to-[#403294] text-white border-0"
       case "ADMIN": return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
       case "MANAGER": return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
       case "ENGINEER": return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"

@@ -128,7 +128,7 @@ export function ChangeRoleDialog({ user, open, onOpenChange, onRoleChanged }: Ch
                         </Button>
                         <Button
                             type="submit"
-                            className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white"
+                            className="bg-primary text-primary-foreground hover:bg-primary/90"
                             disabled={isLoading || role === user?.role}
                         >
                             {isLoading ? (

@@ -129,7 +129,7 @@ export function DashboardCharts() {
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-br from-rose-500/10 to-rose-600/5 border-rose-500/20">
+                <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
                     <CardContent className="p-4">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Priority Items</p>
                         <div className="flex items-end justify-between mt-2">

@@ -2,90 +2,147 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Theme tokens mapped from SKILL.md (jira-atlassian-design-system) — Atlassian blues,
+ * neutrals, spacing base 8px, radii (4px controls / 8px cards), elevation.
+ */
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 224 71% 4%;
+    /* Neutral 50 canvas #F4F5F7, text #172B4D */
+    --background: 218 20% 96%;
+    --foreground: 213 54% 20%;
 
     --card: 0 0% 100%;
-    --card-foreground: 224 71% 4%;
+    --card-foreground: 213 54% 20%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 224 71% 4%;
+    --popover-foreground: 213 54% 20%;
 
-    --primary: 225 100% 58%;
-    --primary-foreground: 210 40% 98%;
+    /* Blue 700 brand #0052CC */
+    --primary: 216 100% 40%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 224 71% 4%;
+    --secondary: 220 14% 92%;
+    --secondary-foreground: 213 54% 20%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 220 14% 92%;
+    --muted-foreground: 215 25% 35%;
 
-    --accent: 164 51% 40%;
-    --accent-foreground: 210 40% 98%;
+    /* Selection / info subtle #DEEBFF */
+    --accent: 213 100% 93%;
+    --accent-foreground: 213 94% 35%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 12 90% 47%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 225 100% 58%;
+    --border: 214 14% 89%;
+    --input: 214 14% 89%;
+    --ring: 213 100% 65%;
 
-    --radius: 0.625rem;
+    /* ADS border.radius.200 — cards; buttons use rounded-md (calc) */
+    --radius: 0.5rem;
 
-    --gradient-primary: linear-gradient(135deg, #2962FF 0%, #6366f1 100%);
-    --gradient-accent: linear-gradient(135deg, #26A69A 0%, #2dd4bf 100%);
-    --gradient-hero: linear-gradient(135deg, #1e3a8a 0%, #2962FF 50%, #6366f1 100%);
-    --gradient-glow: radial-gradient(ellipse at 50% 0%, rgba(99, 102, 241, 0.12), transparent 70%);
+    --gradient-primary: linear-gradient(135deg, #0747a6 0%, #0052cc 55%, #2684ff 100%);
+    --gradient-accent: linear-gradient(135deg, #36b37e 0%, #00875a 100%);
+    --gradient-hero: linear-gradient(135deg, #0747a6 0%, #0052cc 45%, #2684ff 100%);
+    --gradient-glow: radial-gradient(ellipse at 50% 0%, rgba(0, 82, 204, 0.12), transparent 70%);
 
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 3px 0 rgba(0, 0, 0, 0.06);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-    --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
-    --shadow-xl: 0 20px 40px -4px rgba(0, 0, 0, 0.1), 0 8px 16px -8px rgba(0, 0, 0, 0.04);
-    --shadow-glow: 0 0 20px rgba(41, 98, 255, 0.15);
+    --shadow-sm: 0 1px 2px rgba(9, 30, 66, 0.12);
+    --shadow-md: 0 4px 8px rgba(9, 30, 66, 0.12);
+    --shadow-lg: 0 4px 8px rgba(9, 30, 66, 0.15), 0 0 1px rgba(9, 30, 66, 0.2);
+    --shadow-xl: 0 8px 16px rgba(9, 30, 66, 0.18);
+    --shadow-glow: 0 0 0 2px rgba(76, 154, 255, 0.35);
+
+    /* Optional raw ADS aliases for custom CSS */
+    --ds-text: #172b4d;
+    --ds-text-subtle: #42526e;
+    --ds-link: #0052cc;
+    --ds-border: #dfe1e6;
+    --ds-surface: #ffffff;
+    --ds-canvas: #f4f5f7;
+    --ds-font-body: 400 0.875rem/1.25rem var(--font-inter), -apple-system, BlinkMacSystemFont,
+      "Segoe UI", sans-serif;
+    --ds-font-body-large: 400 1rem/1.5rem var(--font-inter), -apple-system, BlinkMacSystemFont,
+      "Segoe UI", sans-serif;
+    --ds-font-heading-xsmall: 600 0.75rem/1rem var(--font-inter), -apple-system, BlinkMacSystemFont,
+      "Segoe UI", sans-serif;
+    --ds-font-heading-small: 600 0.875rem/1rem var(--font-inter), -apple-system, BlinkMacSystemFont,
+      "Segoe UI", sans-serif;
+    --ds-font-heading-medium: 600 1rem/1.25rem var(--font-inter), -apple-system, BlinkMacSystemFont,
+      "Segoe UI", sans-serif;
+    --ds-font-heading-large: 600 1.25rem/1.5rem var(--font-inter), -apple-system, BlinkMacSystemFont,
+      "Segoe UI", sans-serif;
+    --ds-font-heading-xlarge: 600 1.5rem/1.75rem var(--font-inter), -apple-system, BlinkMacSystemFont,
+      "Segoe UI", sans-serif;
+    --ds-font-heading-xxlarge: 600 1.8125rem/2rem var(--font-inter), -apple-system, BlinkMacSystemFont,
+      "Segoe UI", sans-serif;
+    --ds-font-code: 400 0.75rem/1em var(--font-mono), "JetBrains Mono", monospace;
   }
 
   .dark {
-    /* OctaVertex Media — near-black + brand red accent */
-    --background: 0 0% 4%;
-    --foreground: 0 0% 98%;
+    /* Jira / ADS-style dark canvas (blue-gray) */
+    --background: 214 12% 13%;
+    --foreground: 210 17% 78%;
 
-    --card: 0 0% 7%;
-    --card-foreground: 0 0% 98%;
+    --card: 214 11% 16%;
+    --card-foreground: 210 17% 78%;
 
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 214 11% 16%;
+    --popover-foreground: 210 17% 78%;
 
-    --primary: 0 100% 60%;
+    --primary: 216 100% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 12%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 214 10% 20%;
+    --secondary-foreground: 210 17% 78%;
 
-    --muted: 0 0% 14%;
-    --muted-foreground: 0 0% 64%;
+    --muted: 214 10% 20%;
+    --muted-foreground: 213 12% 58%;
 
-    --accent: 0 85% 48%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 213 40% 22%;
+    --accent-foreground: 213 100% 75%;
 
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 12 75% 48%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 16%;
-    --input: 0 0% 16%;
-    --ring: 0 100% 58%;
+    --border: 214 10% 24%;
+    --input: 214 10% 24%;
+    --ring: 213 100% 55%;
 
-    --gradient-primary: linear-gradient(135deg, #b91c1c 0%, #ff3131 100%);
-    --gradient-accent: linear-gradient(135deg, #7f1d1d 0%, #ef4444 100%);
-    --gradient-hero: linear-gradient(135deg, #0a0a0a 0%, #1a0505 45%, #450a0a 100%);
-    --gradient-glow: radial-gradient(ellipse at 50% 0%, rgba(99, 102, 241, 0.2), transparent 70%);
+    --gradient-primary: linear-gradient(135deg, #2684ff 0%, #0052cc 100%);
+    --gradient-accent: linear-gradient(135deg, #57d9a3 0%, #36b37e 100%);
+    --gradient-hero: linear-gradient(135deg, #1c2b41 0%, #0052cc 100%);
+    --gradient-glow: radial-gradient(ellipse at 50% 0%, rgba(38, 132, 255, 0.2), transparent 70%);
 
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.25);
-    --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.3);
-    --shadow-xl: 0 20px 40px -4px rgba(0, 0, 0, 0.4);
-    --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.25);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.45);
+    --shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.5);
+    --shadow-glow: 0 0 0 2px rgba(76, 154, 255, 0.45);
+
+    --ds-text: #b6c2cf;
+    --ds-text-subtle: #8c9bab;
+    --ds-link: #579dff;
+    --ds-border: #38414a;
+    --ds-surface: #22272b;
+    --ds-canvas: #1d2125;
+    --ds-font-body: 400 0.875rem/1.25rem var(--font-inter), -apple-system, BlinkMacSystemFont,
+      "Segoe UI", sans-serif;
+    --ds-font-body-large: 400 1rem/1.5rem var(--font-inter), -apple-system, BlinkMacSystemFont,
+      "Segoe UI", sans-serif;
+    --ds-font-heading-xsmall: 600 0.75rem/1rem var(--font-inter), -apple-system, BlinkMacSystemFont,
+      "Segoe UI", sans-serif;
+    --ds-font-heading-small: 600 0.875rem/1rem var(--font-inter), -apple-system, BlinkMacSystemFont,
+      "Segoe UI", sans-serif;
+    --ds-font-heading-medium: 600 1rem/1.25rem var(--font-inter), -apple-system, BlinkMacSystemFont,
+      "Segoe UI", sans-serif;
+    --ds-font-heading-large: 600 1.25rem/1.5rem var(--font-inter), -apple-system, BlinkMacSystemFont,
+      "Segoe UI", sans-serif;
+    --ds-font-heading-xlarge: 600 1.5rem/1.75rem var(--font-inter), -apple-system, BlinkMacSystemFont,
+      "Segoe UI", sans-serif;
+    --ds-font-heading-xxlarge: 600 1.8125rem/2rem var(--font-inter), -apple-system, BlinkMacSystemFont,
+      "Segoe UI", sans-serif;
+    --ds-font-code: 400 0.75rem/1em var(--font-mono), "JetBrains Mono", monospace;
   }
 }
 
@@ -101,19 +158,33 @@
 
   body {
     @apply text-foreground antialiased;
+    /* ADS font.body — 14px / 20px / 400 (SKILL.md) */
+    font: var(--ds-font-body);
     font-feature-settings: "rlig" 1, "calt" 1;
     height: 100%;
     overflow: hidden;
-    /* Premium background with subtle radial gradient mesh */
-    background: radial-gradient(circle at 15% 10%, rgba(124, 58, 237, 0.05) 0%, transparent 25%),
-      radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.06) 0%, transparent 35%),
-      radial-gradient(circle at 50% 80%, rgba(236, 72, 153, 0.04) 0%, transparent 40%),
-      hsl(var(--background));
+    background: hsl(var(--background));
     background-attachment: fixed;
+  }
+
+  code,
+  pre,
+  kbd,
+  samp {
+    font: var(--ds-font-code);
   }
 }
 
 @layer utilities {
+  /* OctaVertex / light logos on pale backgrounds — stronger than drop-shadow-sm */
+  .logo-on-light {
+    filter: drop-shadow(0 1px 2px rgba(9, 30, 66, 0.22)) drop-shadow(0 2px 8px rgba(9, 30, 66, 0.16))
+      drop-shadow(0 6px 18px rgba(9, 30, 66, 0.1));
+  }
+
+  .dark .logo-on-light {
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.45)) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
+  }
 
   /* Premium glass effect */
   .glass {
@@ -369,13 +440,15 @@
   animation-delay: 0.3s;
 }
 
-/* User appearance preferences (Settings → Appearance) */
+/* User appearance — ADS tokens (SKILL): keep 16px rem root; scale body via --ds-font-body */
 html[data-font-size="small"] {
-  font-size: 14px;
+  --ds-font-body: 400 0.75rem/1rem var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
 }
 
 html[data-font-size="large"] {
-  font-size: 18px;
+  --ds-font-body: 400 1rem/1.5rem var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
 }
 
 html[data-density="compact"] {
