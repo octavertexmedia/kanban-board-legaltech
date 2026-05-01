@@ -13,6 +13,13 @@ try {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: {
+    // Neon integration exposes `vertexpm_VITE_NEON_AUTH_URL`; expose for any client that needs the auth UI origin.
+    NEXT_PUBLIC_NEON_AUTH_URL:
+      process.env.vertexpm_VITE_NEON_AUTH_URL ||
+      process.env.NEXT_PUBLIC_NEON_AUTH_URL ||
+      '',
+  },
   output: 'standalone',
   eslint: {
     ignoreDuringBuilds: true,

@@ -3,6 +3,10 @@ import prisma from '@/lib/db'
 import { hashPassword } from '@/lib/authorization'
 import { neonAuth } from '@/lib/neon/server'
 import { UserKind, type Role } from '@prisma/client'
+import {
+    isWorkspaceBootstrapAdminEmail,
+    shouldPromoteToBootstrapAdmin,
+} from '@/lib/neon/workspace-admin-bootstrap'
 
 type SessionUser = { email?: string | null; name?: string | null }
 
@@ -31,6 +35,39 @@ export async function ensureAppUserFromNeonSession(
         },
     })
     if (existing) {
+        if (shouldPromoteToBootstrapAdmin(email, existing.role, existing.userKind)) {
+            const upgraded = await prisma.user.update({
+                where: { id: existing.id },
+                data: {
+                    lastActive: new Date(),
+                    role: 'ADMIN',
+                    status: 'ACTIVE',
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: true,
+                    userKind: true,
+                    status: true,
+                    avatar: true,
+                    lastActive: true,
+                },
+            })
+            await prisma.activityLog
+                .create({
+                    data: {
+                        action: 'updated',
+                        entity: 'user',
+                        entityId: upgraded.id,
+                        details: `Bootstrap: promoted ${email} to ADMIN (workspace default admin list)`,
+                        userId: upgraded.id,
+                    },
+                })
+                .catch(() => {})
+            return upgraded
+        }
+
         await prisma.user.update({
             where: { id: existing.id },
             data: { lastActive: new Date() },
@@ -41,12 +78,16 @@ export async function ensureAppUserFromNeonSession(
     const placeholderPassword = await hashPassword(randomBytes(32).toString('hex'))
     const name = sessionUser.name?.trim() || email.split('@')[0] || 'User'
 
+    const role: Role =
+        defaults?.role ??
+        (isWorkspaceBootstrapAdminEmail(email) ? 'ADMIN' : 'ENGINEER')
+
     return prisma.user.create({
         data: {
             email,
             name,
             password: placeholderPassword,
-            role: defaults?.role ?? 'ENGINEER',
+            role,
             userKind: defaults?.userKind ?? UserKind.INTERNAL,
             status: 'ACTIVE',
         },
