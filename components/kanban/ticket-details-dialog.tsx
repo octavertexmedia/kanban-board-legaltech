@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Send, Loader2, RefreshCw, MessageSquare, Activity, Info, UserCheck } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { toast } from "sonner"
+import { MarkdownRenderer } from "@/components/common/markdown-renderer"
 
 interface DBUser {
   id: string
@@ -235,7 +236,7 @@ export function TicketDetailsDialog({
             {ticket.description && (
               <div>
                 <h3 className="text-sm font-semibold text-muted-foreground mb-2">Description</h3>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">{ticket.description}</p>
+                <MarkdownRenderer content={ticket.description} className="prose-p:my-2 prose-headings:mt-3 prose-headings:mb-2" />
               </div>
             )}
 
@@ -410,8 +411,11 @@ export function TicketDetailsDialog({
                           })}
                         </span>
                       </div>
-                      <div className="bg-muted/50 rounded-lg px-3 py-2.5 text-sm leading-relaxed">
-                        {comment.text}
+                      <div className="bg-muted/50 rounded-lg px-3 py-2.5">
+                        <MarkdownRenderer
+                          content={comment.text}
+                          className="prose-p:my-2 prose-headings:mt-3 prose-headings:mb-2 prose-pre:my-2"
+                        />
                       </div>
                     </div>
                   </div>
