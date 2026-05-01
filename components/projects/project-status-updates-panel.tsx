@@ -29,9 +29,12 @@ interface UpdateRow {
 export function ProjectStatusUpdatesPanel({
   projectId,
   readOnly = false,
+  surface = "card",
 }: {
   projectId: string
   readOnly?: boolean
+  /** `plain` strips the outer card for use inside a Sheet. */
+  surface?: "plain" | "card"
 }) {
   const { isAuthenticated, isClientUser } = useAuth()
   const [updates, setUpdates] = useState<UpdateRow[]>([])
@@ -95,15 +98,8 @@ export function ProjectStatusUpdatesPanel({
 
   const showComposer = !readOnly && !isClientUser
 
-  return (
-    <Card className="border-border/80">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Megaphone className="h-5 w-5 text-primary" />
-          Project status updates
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
+  const inner = (
+    <>
         {showComposer && (
           <div className="space-y-3 rounded-lg border border-border/60 bg-muted/20 p-4">
             <p className="text-sm text-muted-foreground">
@@ -167,7 +163,22 @@ export function ProjectStatusUpdatesPanel({
             ))}
           </ul>
         )}
-      </CardContent>
+    </>
+  )
+
+  if (surface === "plain") {
+    return <div className="space-y-6">{inner}</div>
+  }
+
+  return (
+    <Card className="border-border/80">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Megaphone className="h-5 w-5 text-primary" />
+          Project status updates
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">{inner}</CardContent>
     </Card>
   )
 }

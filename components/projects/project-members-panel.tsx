@@ -54,12 +54,15 @@ interface ProjectMembersPanelProps {
     projectId: string
     members: MemberRow[]
     onMembersChange: () => void
+    /** `plain` = compact (e.g. inside a Sheet). `card` = legacy bordered card. */
+    surface?: "plain" | "card"
 }
 
 export function ProjectMembersPanel({
     projectId,
     members,
     onMembersChange,
+    surface = "plain",
 }: ProjectMembersPanelProps) {
     const { isManager, user: me } = useAuth()
     const [open, setOpen] = useState(false)
@@ -146,6 +149,158 @@ export function ProjectMembersPanel({
         }
     }
 
+    const list = (
+        <ul className="divide-y rounded-md border">
+            {members.map((m) => {
+                const isSelf = me?.id === m.user.id
+                return (
+                    <li
+                        key={m.id}
+                        className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm"
+                    >
+                        <div>
+                            <span className="font-medium">{m.user.name}</span>
+                            <span className="text-muted-foreground">
+                                {" "}
+                                · {m.user.email}
+                            </span>
+                            <span className="ml-2 text-xs uppercase text-muted-foreground">
+                                {m.role}
+                            </span>
+                            {isSelf && (
+                                <span className="ml-2 text-xs text-muted-foreground">
+                                    (you)
+                                </span>
+                            )}
+                        </div>
+                        {isManager && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                title="Remove from project"
+                                disabled={removingId === m.id}
+                                onClick={() => void removeMember(m)}
+                            >
+                                {removingId === m.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Trash2 className="h-4 w-4" />
+                                )}
+                            </Button>
+                        )}
+                    </li>
+                )
+            })}
+        </ul>
+    )
+
+    if (surface === "plain") {
+        if (!isManager) {
+            return (
+                <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                        People on this project.
+                    </p>
+                    {list}
+                </div>
+            )
+        }
+        return (
+            <div className="space-y-4">
+                <div className="flex justify-end">
+                    <Dialog open={open} onOpenChange={setOpen}>
+                        <DialogTrigger asChild>
+                            <Button size="sm" variant="outline">
+                                <UserPlus className="h-4 w-4 mr-1.5" />
+                                Add member
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md">
+                            <DialogHeader>
+                                <DialogTitle>Add project member</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 py-2">
+                                <div className="space-y-2">
+                                    <Label>User</Label>
+                                    {loadingDir ? (
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            Loading directory…
+                                        </div>
+                                    ) : addableUsers.length === 0 ? (
+                                        <p className="text-sm text-muted-foreground">
+                                            No users match this seat type.
+                                        </p>
+                                    ) : (
+                                        <Select
+                                            value={selectedUserId}
+                                            onValueChange={setSelectedUserId}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select a user" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {addableUsers.map((u) => (
+                                                    <SelectItem key={u.id} value={u.id}>
+                                                        {u.name} ({u.email})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Seat</Label>
+                                    <Select
+                                        value={seatRole}
+                                        onValueChange={(v) => {
+                                            setSeatRole(v as "MEMBER" | "CLIENT")
+                                            setSelectedUserId("")
+                                        }}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="MEMBER">
+                                                Team member (internal)
+                                            </SelectItem>
+                                            <SelectItem value="CLIENT">
+                                                Client portal
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={() => setOpen(false)}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={() => void addMember()}
+                                    disabled={submitting}
+                                >
+                                    {submitting && (
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    )}
+                                    Add
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </div>
+                {list}
+            </div>
+        )
+    }
+
+    /* ——— card surface (legacy) ——— */
     if (!isManager) return null
 
     return (
@@ -154,7 +309,8 @@ export function ProjectMembersPanel({
                 <div>
                     <CardTitle className="text-base">Project team</CardTitle>
                     <CardDescription>
-                        Add or remove people on this project. Owners cannot be removed if they are the only owner.
+                        Add or remove people on this project. Owners cannot be
+                        removed if they are the only owner.
                     </CardDescription>
                 </div>
                 <Dialog open={open} onOpenChange={setOpen}>
@@ -239,50 +395,7 @@ export function ProjectMembersPanel({
                     </DialogContent>
                 </Dialog>
             </CardHeader>
-            <CardContent>
-                <ul className="divide-y rounded-md border">
-                    {members.map((m) => {
-                        const isSelf = me?.id === m.user.id
-                        return (
-                            <li
-                                key={m.id}
-                                className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm"
-                            >
-                                <div>
-                                    <span className="font-medium">{m.user.name}</span>
-                                    <span className="text-muted-foreground">
-                                        {" "}
-                                        · {m.user.email}
-                                    </span>
-                                    <span className="ml-2 text-xs uppercase text-muted-foreground">
-                                        {m.role}
-                                    </span>
-                                    {isSelf && (
-                                        <span className="ml-2 text-xs text-muted-foreground">
-                                            (you)
-                                        </span>
-                                    )}
-                                </div>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-destructive hover:text-destructive"
-                                    title="Remove from project"
-                                    disabled={removingId === m.id}
-                                    onClick={() => void removeMember(m)}
-                                >
-                                    {removingId === m.id ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <Trash2 className="h-4 w-4" />
-                                    )}
-                                </Button>
-                            </li>
-                        )
-                    })}
-                </ul>
-            </CardContent>
+            <CardContent>{list}</CardContent>
         </Card>
     )
 }

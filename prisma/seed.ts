@@ -25,6 +25,7 @@ async function main() {
 
     // ─── Clean existing data ─────────────────────────────
     await prisma.activityLog.deleteMany()
+    await prisma.projectNote.deleteMany()
     await prisma.projectStatusUpdate.deleteMany()
     await prisma.notification.deleteMany()
     await prisma.comment.deleteMany()

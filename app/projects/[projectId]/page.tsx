@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useParams } from "next/navigation"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { ProjectKanbanBoard } from "@/components/projects/project-kanban-board"
-import { ProjectMembersPanel } from "@/components/projects/project-members-panel"
+import { ProjectWorkspaceSheets } from "@/components/projects/project-workspace-sheets"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button"
 import { Users, Calendar, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
-import { ProjectStatusUpdatesPanel } from "@/components/projects/project-status-updates-panel"
 import { toast } from "sonner"
 
 interface BoardProject {
@@ -157,13 +156,11 @@ export default function ProjectPage() {
               </div>
             </div>
 
-            <ProjectMembersPanel
+            <ProjectWorkspaceSheets
               projectId={project.id}
               members={project.members}
-              onMembersChange={loadProject}
+              onTeamChange={loadProject}
             />
-
-            <ProjectStatusUpdatesPanel projectId={project.id} readOnly={isClientUser} />
 
             <ProjectKanbanBoard projectId={project.id} readOnly={isClientUser} />
           </>

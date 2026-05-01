@@ -35,6 +35,7 @@ model User {
   projectMemberships ProjectMember[]
   activityLogs      ActivityLog[]
   statusUpdatesAuthored ProjectStatusUpdate[] @relation("StatusUpdateAuthor")
+  projectNotesAuthored ProjectNote[] @relation("ProjectNoteAuthor")
 
   @@index([email])
   @@index([role])
@@ -77,8 +78,24 @@ model Project {
   members        ProjectMember[]
   activities     ActivityLog[]
   statusUpdates  ProjectStatusUpdate[]
+  notes          ProjectNote[]
 
   @@index([status])
+}
+
+model ProjectNote {
+  id        String   @id @default(cuid())
+  projectId String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author  User    @relation("ProjectNoteAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([createdAt])
 }
 
 model ProjectMember {
