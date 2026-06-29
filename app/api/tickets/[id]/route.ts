@@ -32,6 +32,7 @@ export async function GET(
                 },
                 attachments: true,
                 labels: { include: { label: true } },
+                sprint: { select: { id: true, name: true, status: true } },
             },
         })
 
@@ -96,6 +97,20 @@ export async function PATCH(
         if (body.position !== undefined) updateData.position = body.position
         if (body.timeSpent !== undefined) updateData.timeSpent = body.timeSpent
 
+        if (body.sprintId !== undefined) {
+            if (body.sprintId === null || body.sprintId === '') {
+                updateData.sprintId = null
+            } else {
+                const sprint = await prisma.sprint.findFirst({
+                    where: { id: body.sprintId, projectId: epId },
+                })
+                if (!sprint) {
+                    return NextResponse.json({ error: 'Invalid sprint for this project' }, { status: 400 })
+                }
+                updateData.sprintId = body.sprintId
+            }
+        }
+
         // Handle column move (drag-and-drop)
         if (body.columnId && body.columnId !== existing.columnId) {
             if (!isManagerOrAdmin) return NextResponse.json({ error: 'Forbidden: Only managers and admins can change ticket status' }, { status: 403 })
@@ -147,6 +162,7 @@ export async function PATCH(
                 creator: { select: { id: true, name: true, avatar: true } },
                 column: { select: { id: true, title: true, board: { select: { projectId: true } } } },
                 labels: { include: { label: true } },
+                sprint: { select: { id: true, name: true, status: true } },
                 _count: { select: { comments: true, attachments: true } },
             },
         })

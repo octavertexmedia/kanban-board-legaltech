@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { requireAuth } from '@/lib/api-middleware'
 import { getAccessibleProjectIds, canAccessProject } from '@/lib/project-access'
-import { isClientAuth } from '@/lib/authorization'
+import { hasPermission, isClientAuth } from '@/lib/authorization'
 
 // GET /api/tickets — List tickets with filters
 export async function GET(req: NextRequest) {
@@ -81,10 +81,13 @@ export async function POST(req: NextRequest) {
         if (isClientAuth(auth)) {
             return NextResponse.json({ error: 'Forbidden — clients cannot create tickets' }, { status: 403 })
         }
+        if (!hasPermission(auth.role, 'create_tickets')) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        }
 
         const body = await req.json()
 
-        const { title, description, type, priority, dueDate, columnId, assigneeId, labelIds } = body
+        const { title, description, type, priority, dueDate, columnId, assigneeId, labelIds, sprintId } = body
 
         if (!title || !columnId) {
             return NextResponse.json(
@@ -102,6 +105,15 @@ export async function POST(req: NextRequest) {
         const pid = col?.board?.projectId
         if (!pid || !(await canAccessProject(prisma, auth, pid))) {
             return NextResponse.json({ error: 'Forbidden or invalid column' }, { status: 403 })
+        }
+
+        if (sprintId) {
+            const sprint = await prisma.sprint.findFirst({
+                where: { id: sprintId, projectId: pid },
+            })
+            if (!sprint) {
+                return NextResponse.json({ error: 'Invalid sprint for this project' }, { status: 400 })
+            }
         }
 
         // Get max position in column
@@ -122,6 +134,7 @@ export async function POST(req: NextRequest) {
                 columnId,
                 assigneeId: assigneeId || null,
                 creatorId: auth.userId,
+                sprintId: sprintId || null,
                 labels: labelIds?.length
                     ? { create: labelIds.map((id: string) => ({ labelId: id })) }
                     : undefined,
@@ -129,6 +142,7 @@ export async function POST(req: NextRequest) {
             include: {
                 assignee: { select: { id: true, name: true, email: true, role: true, avatar: true } },
                 creator: { select: { id: true, name: true, avatar: true } },
+                sprint: { select: { id: true, name: true, status: true } },
                 column: { select: { id: true, title: true, board: { select: { projectId: true } } } },
                 labels: { include: { label: true } },
                 _count: { select: { comments: true, attachments: true } },

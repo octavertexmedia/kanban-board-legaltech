@@ -71,7 +71,7 @@ export default function ClientPortalPage() {
         <ul className="grid gap-4">
           {projects.map((p) => (
             <li key={p.id}>
-              <Link href={`/projects/${p.id}`}>
+              <Link href={`/client/projects/${p.id}`}>
                 <Card className="transition-colors hover:border-primary/40 hover:bg-muted/20">
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between gap-2">

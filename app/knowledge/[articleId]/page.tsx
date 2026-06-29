@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, Clock, Eye, Pencil, Tag, Trash2 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { KnowledgeArticle } from "@/lib/types"
-import { formatKnowledgeMarkdownHtml } from "@/lib/knowledge-markdown"
+import { MarkdownRenderer } from "@/components/common/markdown-renderer"
 import { useAuth } from "@/lib/auth-context"
 import { CreateArticleDialog } from "@/components/knowledge/create-article-dialog"
 import {
@@ -177,9 +177,9 @@ export default function ArticlePage() {
                 </div>
               </div>
 
-              <Card className="mb-6">
-                <CardContent className="p-6 prose prose-sm sm:prose-base max-w-none">
-                  <div dangerouslySetInnerHTML={{ __html: formatKnowledgeMarkdownHtml(article.content) }} />
+              <Card className="mb-6 border shadow-none">
+                <CardContent className="p-4">
+                  <MarkdownRenderer content={article.content} />
                 </CardContent>
               </Card>
 

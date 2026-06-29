@@ -76,11 +76,14 @@ export async function ensureAppUserFromNeonSession(
     }
 
     const placeholderPassword = await hashPassword(randomBytes(32).toString('hex'))
+    const allowSignup = process.env.ALLOW_PUBLIC_SIGNUP === 'true'
     const name = sessionUser.name?.trim() || email.split('@')[0] || 'User'
 
     const role: Role =
         defaults?.role ??
-        (isWorkspaceBootstrapAdminEmail(email) ? 'ADMIN' : 'ENGINEER')
+        (isWorkspaceBootstrapAdminEmail(email) ? 'ADMIN' : allowSignup ? 'ENGINEER' : 'VIEWER')
+
+    const status = isWorkspaceBootstrapAdminEmail(email) || allowSignup ? 'ACTIVE' : 'PENDING'
 
     return prisma.user.create({
         data: {
@@ -89,7 +92,7 @@ export async function ensureAppUserFromNeonSession(
             password: placeholderPassword,
             role,
             userKind: defaults?.userKind ?? UserKind.INTERNAL,
-            status: 'ACTIVE',
+            status,
         },
         select: {
             id: true,

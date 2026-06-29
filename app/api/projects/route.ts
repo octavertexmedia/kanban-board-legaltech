@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { requireAuth } from '@/lib/api-middleware'
 import { getAccessibleProjectIds } from '@/lib/project-access'
-import { isClientAuth } from '@/lib/authorization'
+import { isClientAuth, hasPermission } from '@/lib/authorization'
 import { ProjectMemberRole } from '@prisma/client'
 
 // GET /api/projects — List projects
@@ -86,6 +86,9 @@ export async function POST(req: NextRequest) {
         if (auth instanceof NextResponse) return auth
         if (isClientAuth(auth)) {
             return NextResponse.json({ error: 'Forbidden — clients cannot create projects' }, { status: 403 })
+        }
+        if (!hasPermission(auth.role, 'manage_projects')) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
 
         const { name, description, memberIds } = await req.json()

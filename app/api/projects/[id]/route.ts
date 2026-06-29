@@ -39,6 +39,7 @@ export async function GET(
                                 tickets: {
                                     include: {
                                         assignee: { select: { id: true, name: true, email: true, role: true, avatar: true } },
+                                        sprint: { select: { id: true, name: true, status: true } },
                                         labels: { include: { label: true } },
                                         _count: { select: { comments: true, attachments: true } },
                                     },
@@ -48,6 +49,10 @@ export async function GET(
                             orderBy: { position: 'asc' },
                         },
                     },
+                },
+                sprints: {
+                    include: { _count: { select: { tickets: true } } },
+                    orderBy: [{ status: 'asc' }, { startDate: 'desc' }],
                 },
             },
         })

@@ -12,7 +12,7 @@ importers:
         specifier: ^1.5.3
         version: 1.5.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@hello-pangea/dnd':
-        specifier: latest
+        specifier: 18.0.1
         version: 18.0.1(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@hookform/resolvers':
         specifier: ^3.9.1

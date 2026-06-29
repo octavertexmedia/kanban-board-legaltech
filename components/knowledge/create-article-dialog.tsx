@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { knowledgeCategories } from "@/lib/initial-data"
 import { Badge } from "@/components/ui/badge"
 import type { KnowledgeArticle } from "@/lib/types"
-import { formatKnowledgeMarkdownHtml } from "@/lib/knowledge-markdown"
+import { MarkdownRenderer } from "@/components/common/markdown-renderer"
 import { toast } from "sonner"
 
 interface CreateArticleDialogProps {
@@ -233,13 +233,13 @@ export function CreateArticleDialog({
                     </p>
                   </TabsContent>
                   <TabsContent value="preview">
-                    <div className="border rounded-md p-4 min-h-[300px] prose prose-sm max-w-none">
-                      {content ? (
-                        <div dangerouslySetInnerHTML={{ __html: formatKnowledgeMarkdownHtml(content) }} />
-                      ) : (
-                        <p className="text-muted-foreground">Nothing to preview yet.</p>
-                      )}
-                    </div>
+                        <div className="border rounded-md p-4 min-h-[300px]">
+                          {content ? (
+                            <MarkdownRenderer content={content} className="prose-p:my-2" />
+                          ) : (
+                            <p className="text-muted-foreground text-sm">Nothing to preview yet.</p>
+                          )}
+                        </div>
                   </TabsContent>
                 </Tabs>
               </div>

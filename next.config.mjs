@@ -19,6 +19,7 @@ const nextConfig = {
       process.env.vertexpm_VITE_NEON_AUTH_URL ||
       process.env.NEXT_PUBLIC_NEON_AUTH_URL ||
       '',
+    NEXT_PUBLIC_ALLOW_PUBLIC_SIGNUP: process.env.ALLOW_PUBLIC_SIGNUP === 'true' ? 'true' : 'false',
   },
   output: 'standalone',
   eslint: {

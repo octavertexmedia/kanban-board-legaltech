@@ -93,7 +93,7 @@ export async function POST(
                         type: 'project_status_update',
                         title: 'New project update',
                         message: title,
-                        linkTo: `/client/projects/${projectId}`,
+                        linkTo: `/projects/${projectId}`,
                         userId: m.userId,
                     })),
                 })

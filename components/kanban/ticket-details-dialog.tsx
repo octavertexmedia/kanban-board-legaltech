@@ -48,6 +48,8 @@ interface DBTicket {
   columnId: string
   assignee: DBUser | null
   creator: DBUser | null
+  sprint?: { id: string; name: string; status: string } | null
+  sprintId?: string | null
   labels: Array<{ label: { id: string; name: string; color: string } }>
   _count: { comments: number; attachments: number }
 }
@@ -58,6 +60,8 @@ interface TicketDetailsDialogProps {
   onOpenChange: (open: boolean) => void
   onTicketUpdated?: (ticket: DBTicket) => void
   readOnly?: boolean
+  projectId?: string
+  sprints?: Array<{ id: string; name: string; status: string }>
 }
 
 const getPriorityColor = (p: string) => {
@@ -88,6 +92,8 @@ export function TicketDetailsDialog({
   onOpenChange,
   onTicketUpdated,
   readOnly = false,
+  projectId,
+  sprints = [],
 }: TicketDetailsDialogProps) {
   const [commentText, setCommentText] = useState("")
   const [comments, setComments] = useState<DBComment[]>([])
@@ -95,8 +101,11 @@ export function TicketDetailsDialog({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoadingComments, setIsLoadingComments] = useState(false)
   const [users, setUsers] = useState<DBUser[]>([])
+  const NONE = "__none__"
   const [assigneeId, setAssigneeId] = useState(ticket?.assignee?.id || "")
+  const [sprintId, setSprintId] = useState(ticket?.sprint?.id || ticket?.sprintId || NONE)
   const [isUpdatingAssignee, setIsUpdatingAssignee] = useState(false)
+  const [isUpdatingSprint, setIsUpdatingSprint] = useState(false)
   const { isAuthenticated, user, isAdmin, isManager } = useAuth()
   const canAssign = !readOnly && (isAdmin || isManager)
 
@@ -104,12 +113,11 @@ export function TicketDetailsDialog({
     "Content-Type": "application/json",
   })
 
-  const NONE = "__none__"
-
   // Load comments & activity when ticket changes
   useEffect(() => {
     if (!ticket || !open) return
     setAssigneeId(ticket.assignee?.id || "")
+    setSprintId(ticket.sprint?.id || ticket.sprintId || NONE)
     loadTicketDetails()
     if (!readOnly) loadUsers()
   }, [ticket?.id, open, readOnly])
@@ -198,6 +206,30 @@ export function TicketDetailsDialog({
       setAssigneeId(ticket.assignee?.id || "") // revert
     } finally {
       setIsUpdatingAssignee(false)
+    }
+  }
+
+  const handleSprintChange = async (newSprintId: string) => {
+    if (!ticket || !canAssign) return
+    const resolved = newSprintId === NONE ? null : newSprintId
+    setSprintId(newSprintId)
+    setIsUpdatingSprint(true)
+    try {
+      const res = await fetch(`/api/tickets/${ticket.id}`, {
+        method: "PATCH",
+        headers: authHeaders(),
+        credentials: "include",
+        body: JSON.stringify({ sprintId: resolved }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      toast.success("Sprint updated")
+      onTicketUpdated?.(data.ticket)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Update failed")
+      setSprintId(ticket.sprint?.id || ticket.sprintId || NONE)
+    } finally {
+      setIsUpdatingSprint(false)
     }
   }
 
@@ -300,6 +332,28 @@ export function TicketDetailsDialog({
                     : <span className="text-muted-foreground">No due date</span>
                   }
                 </p>
+              </div>
+
+              {/* Sprint */}
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-2">Sprint</h3>
+                {canAssign && sprints.length > 0 ? (
+                  <Select value={sprintId} onValueChange={handleSprintChange} disabled={isUpdatingSprint}>
+                    <SelectTrigger className="h-9 text-xs">
+                      <SelectValue placeholder="No sprint" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NONE}>No sprint</SelectItem>
+                      {sprints.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name} ({s.status})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="text-sm">{ticket.sprint?.name || <span className="text-muted-foreground">Backlog</span>}</p>
+                )}
               </div>
 
               {/* Creator */}

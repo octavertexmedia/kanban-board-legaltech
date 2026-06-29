@@ -32,6 +32,7 @@ interface CreateTicketDialogProps {
   onOpenChange: (open: boolean) => void
   projectId?: string
   columnId?: string
+  sprintId?: string
   onTicketCreated?: (ticket: any) => void
 }
 
@@ -40,6 +41,7 @@ export function CreateTicketDialog({
   onOpenChange,
   projectId,
   columnId,
+  sprintId,
   onTicketCreated,
 }: CreateTicketDialogProps) {
   const [title, setTitle] = useState("")
@@ -88,6 +90,7 @@ export function CreateTicketDialog({
     try {
       const res = await fetch("/api/tickets", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -99,6 +102,7 @@ export function CreateTicketDialog({
           dueDate: dueDate || undefined,
           columnId,
           assigneeId: (assigneeId === NONE || !assigneeId) ? undefined : assigneeId,
+          sprintId: sprintId || undefined,
         }),
       })
 

@@ -15,12 +15,32 @@ import {
     UserKind,
     ProjectMemberRole,
     StatusUpdateVisibility,
+    SprintStatus,
 } from '@prisma/client'
 import { hashPassword } from '../lib/authorization'
 
 const prisma = new PrismaClient()
 
+function assertSeedAllowed() {
+    const isProduction = process.env.NODE_ENV === 'production'
+    const forceSeed = process.env.ALLOW_SEED === 'true'
+
+    if (isProduction && !forceSeed) {
+        console.error(
+            '❌ Refusing to seed: this script deletes ALL data before inserting demo rows.',
+        )
+        console.error(
+            '   Production deploys use `prisma migrate deploy` only — existing rows are preserved.',
+        )
+        console.error(
+            '   To override (destructive), set ALLOW_SEED=true explicitly.',
+        )
+        process.exit(1)
+    }
+}
+
 async function main() {
+    assertSeedAllowed()
     console.log('🌱 Seeding database...\n')
 
     // ─── Clean existing data ─────────────────────────────
@@ -32,6 +52,7 @@ async function main() {
     await prisma.attachment.deleteMany()
     await prisma.ticketLabel.deleteMany()
     await prisma.ticket.deleteMany()
+    await prisma.sprint.deleteMany()
     await prisma.column.deleteMany()
     await prisma.board.deleteMany()
     await prisma.projectMember.deleteMany()
@@ -278,6 +299,39 @@ async function main() {
     })
     console.log('✅ Created 3 boards with columns')
 
+    // ─── Sprints ─────────────────────────────────────────
+    const sprintP1Active = await prisma.sprint.create({
+        data: {
+            projectId: project1.id,
+            name: 'Sprint 1 — Foundation',
+            goal: 'Authentication, landing page, and CI/CD setup',
+            startDate: new Date('2026-02-24'),
+            endDate: new Date('2026-03-10'),
+            status: SprintStatus.ACTIVE,
+        },
+    })
+    await prisma.sprint.create({
+        data: {
+            projectId: project1.id,
+            name: 'Sprint 2 — Polish',
+            goal: 'Onboarding flow and performance improvements',
+            startDate: new Date('2026-03-11'),
+            endDate: new Date('2026-03-25'),
+            status: SprintStatus.PLANNED,
+        },
+    })
+    const sprintP2Active = await prisma.sprint.create({
+        data: {
+            projectId: project2.id,
+            name: 'Sprint 1 — Client MVP',
+            goal: 'Dashboard wireframes and document sharing',
+            startDate: new Date('2026-02-17'),
+            endDate: new Date('2026-03-07'),
+            status: SprintStatus.ACTIVE,
+        },
+    })
+    console.log('✅ Created sprints')
+
     // ─── Tickets for Project 1 ──────────────────────────
     const ticketsP1 = await Promise.all([
         prisma.ticket.create({
@@ -289,6 +343,7 @@ async function main() {
                 dueDate: new Date('2026-03-15'),
                 position: 0,
                 columnId: board1.columns[1].id,
+                sprintId: sprintP1Active.id,
                 assigneeId: users[2].id,
                 creatorId: users[1].id,
                 labels: { create: [{ labelId: labels[1].id }] },
@@ -303,6 +358,7 @@ async function main() {
                 dueDate: new Date('2026-03-10'),
                 position: 1,
                 columnId: board1.columns[1].id,
+                sprintId: sprintP1Active.id,
                 assigneeId: users[3].id,
                 creatorId: users[1].id,
                 labels: { create: [{ labelId: labels[2].id }] },
@@ -331,6 +387,7 @@ async function main() {
                 dueDate: new Date('2026-03-08'),
                 position: 0,
                 columnId: board1.columns[2].id,
+                sprintId: sprintP1Active.id,
                 assigneeId: users[5].id,
                 creatorId: users[1].id,
                 labels: { create: [{ labelId: labels[0].id }] },
@@ -345,6 +402,7 @@ async function main() {
                 dueDate: new Date('2026-03-12'),
                 position: 1,
                 columnId: board1.columns[1].id,
+                sprintId: sprintP1Active.id,
                 assigneeId: users[2].id,
                 creatorId: users[1].id,
                 labels: { create: [{ labelId: labels[0].id }] },
@@ -359,6 +417,7 @@ async function main() {
                 dueDate: new Date('2026-03-09'),
                 position: 0,
                 columnId: board1.columns[3].id,
+                sprintId: sprintP1Active.id,
                 assigneeId: users[5].id,
                 creatorId: users[1].id,
                 labels: { create: [{ labelId: labels[1].id }] },
@@ -411,6 +470,7 @@ async function main() {
                 dueDate: new Date('2026-03-05'),
                 position: 0,
                 columnId: board2.columns[1].id,
+                sprintId: sprintP2Active.id,
                 assigneeId: users[3].id,
                 creatorId: users[1].id,
                 labels: { create: [{ labelId: labels[2].id }, { labelId: labels[3].id }] },
@@ -425,6 +485,7 @@ async function main() {
                 dueDate: new Date('2026-03-18'),
                 position: 0,
                 columnId: board2.columns[2].id,
+                sprintId: sprintP2Active.id,
                 assigneeId: users[2].id,
                 creatorId: users[1].id,
                 labels: { create: [{ labelId: labels[1].id }, { labelId: labels[3].id }] },

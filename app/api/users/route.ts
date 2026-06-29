@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { getAuthFromRequest, requireRole } from '@/lib/api-middleware'
-import { hashPassword, isClientAuth } from '@/lib/authorization'
+import { hashPassword, isClientAuth, isRoleHigherOrEqual } from '@/lib/authorization'
 import { neonAuth } from '@/lib/neon/server'
 import { UserKind } from '@prisma/client'
 
@@ -13,6 +13,9 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
         if (isClientAuth(auth)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        }
+        if (!isRoleHigherOrEqual(auth.role, 'MANAGER')) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
 

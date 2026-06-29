@@ -1,44 +1,58 @@
-# 🚀 Deployment Checklist
+# Deployment checklist
 
-Your application is fully configured and ready for production!
+## Environment variables (Vercel)
 
-## 1. Push Code to GitHub
+Set these in the Vercel project — **never commit real values to git**.
 
-```bash
-git add .
-git commit -m "feat: complete backend setup with Neon.tech, Prisma, and Resend"
-git push origin main
-```
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | Neon pooled Postgres connection string |
+| `DIRECT_DATABASE_URL` | Neon direct (non-pooler) URL for migrations |
+| `NEON_AUTH_BASE_URL` | Neon Auth project URL |
+| `NEON_AUTH_COOKIE_SECRET` | Cookie signing secret (32+ chars) |
+| `vertexpm_DATABASE_URL` | Optional Neon integration alias → mapped to `DATABASE_URL` |
+| `vertexpm_DIRECT_DATABASE_URL` | Optional alias → `DIRECT_DATABASE_URL` |
+| `vertexpm_VITE_NEON_AUTH_URL` | Optional alias → `NEON_AUTH_BASE_URL` |
+| `INTERNAL_EMAIL_WORKER_SECRET` | Server-only secret for `/api/send-email` |
+| `RESEND_API_KEY` | Resend API key |
+| `RESEND_FROM_EMAIL` | Verified sender address |
+| `NEXT_PUBLIC_APP_URL` | Production URL e.g. `https://kanban.vertexcrm.in` |
+| `ALLOW_PUBLIC_SIGNUP` | Set to `true` only if open registration is intended |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob (optional uploads) |
+| `GOOGLE_*` | Google Calendar / Meet (optional) |
+| `PUSHER_*` | Realtime (optional) |
 
-## 2. Deploy on Vercel (Recommended)
+## Build
 
-1. Go to [vercel.com/new](https://vercel.com/new)
-2. Import your GitHub repository (`kanban-board-legaltech`)
-3. **Environment Variables**: Add these in the "Environment Variables" section:
+The `build` script runs `prisma migrate deploy`, `prisma generate`, and `next build`.
 
-| Variable | Value |
-|----------|-------|
-| `DATABASE_URL` | `postgresql://neondb_owner:npg_BMLTNX4GFxa7@ep-royal-dream-ai879i8x-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require` |
-| `DIRECT_DATABASE_URL` | `postgresql://neondb_owner:npg_BMLTNX4GFxa7@ep-royal-dream-ai879i8x.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require` |
-| `JWT_SECRET` | `cengineers-kanban-secret-key-2026-change-in-production` (or generate a new random string) |
-| `RESEND_API_KEY` | `re_aJsaynXN_C4Vhx45FxRN22ThBFdmddAGV` |
-| `RESEND_FROM_EMAIL` | `onboarding@resend.dev` (or your verified domain email) |
-| `NEXT_PUBLIC_APP_URL` | `https://your-project.vercel.app` (update after deployment) |
+**Your existing data is preserved on deploy.** Migrations only apply schema changes (new tables/columns/indexes). They do not delete users, projects, tickets, or other rows.
 
-4. Click **Deploy**!
+The sprint migration (`20260501130000_sprints`) is additive only:
 
-## 3. Post-Deployment Verification
+- Creates the `Sprint` table
+- Adds optional nullable `Ticket.sprintId` (existing tickets keep `NULL`)
 
-1. **Database Migration**: Vercel handles the build, but you should verify migrations ran. Check `Build Logs`.
-2. **Seed Data**: If you want the demo data in production, run this locally against the prod DB (which you already did) or add `npx prisma db seed` to your build command (not recommended for production usually).
-   - Since we already seeded the remote Neon database, your deployed app will have data immediately! 🎉
+## Data preservation (important)
 
-## 4. Test Production Features
+| Command | Runs on Vercel build? | Effect on data |
+|---------|----------------------|----------------|
+| `prisma migrate deploy` | **Yes** | Safe — schema only, no row deletes |
+| `prisma db seed` | **No** | **Wipes all data** then inserts demo data |
+| `pnpm db:reset` | **No** | **Drops and recreates** schema + seed |
 
-- **Login**: Use the demo credentials (e.g., `admin@cengineers.com` / `Admin@2026`)
-- **Email**: Trigger an action like creating a ticket to test real email sending
-- **Search**: Try searching for "marketing" or "legal" to test full-text search
+**Do not run `pnpm db:seed` or `pnpm db:reset` against production.**
 
----
+The seed script refuses to run when `NODE_ENV=production` unless you explicitly set `ALLOW_SEED=true` (still destructive).
 
-**You're all set!** verify everything works locally first with `npm run dev`.
+## Post-deploy
+
+1. Confirm migrations applied in build logs.
+2. Bootstrap admins via Neon Auth + workspace admin list.
+3. Run `pnpm db:seed` only on **local/dev** if you need demo data — never on production.
+
+## Security
+
+- Rotate any credentials that were ever committed to git.
+- Keep `ALLOW_PUBLIC_SIGNUP` unset or `false` for invite-only workspaces.
+- Use `INTERNAL_EMAIL_WORKER_SECRET` for all outbound email from API routes.

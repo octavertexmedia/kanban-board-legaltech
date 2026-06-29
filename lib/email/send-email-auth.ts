@@ -5,16 +5,12 @@ import { getAuthFromRequest } from "@/lib/api-middleware"
 export const EMAIL_WORKER_SECRET_HEADER = "x-email-worker-secret"
 
 /**
- * Send-email is allowed for:
- * - Signed-in users (Neon Auth session cookies), or
- * - Requests bearing `INTERNAL_EMAIL_WORKER_SECRET` (required for server-side fetch
- *   from API routes, which do not forward the browser session cookie).
+ * Send-email is allowed only for requests bearing `INTERNAL_EMAIL_WORKER_SECRET`.
+ * Browser sessions cannot trigger outbound email directly.
  */
 export async function isSendEmailAuthorized(req: NextRequest): Promise<boolean> {
     const expected = process.env.INTERNAL_EMAIL_WORKER_SECRET?.trim()
-    if (expected) {
-        const provided = req.headers.get(EMAIL_WORKER_SECRET_HEADER)?.trim()
-        if (provided === expected) return true
-    }
-    return (await getAuthFromRequest(req)) != null
+    if (!expected) return false
+    const provided = req.headers.get(EMAIL_WORKER_SECRET_HEADER)?.trim()
+    return provided === expected
 }

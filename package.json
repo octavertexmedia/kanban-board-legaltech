@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@calcom/embed-react": "^1.5.3",
-    "@hello-pangea/dnd": "latest",
+    "@hello-pangea/dnd": "18.0.1",
     "@hookform/resolvers": "^3.9.1",
     "@neondatabase/auth": "^0.3.0-beta",
     "@neondatabase/serverless": "^1.0.2",

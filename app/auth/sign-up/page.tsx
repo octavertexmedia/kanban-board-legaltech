@@ -16,6 +16,8 @@ import { APP_DISPLAY_NAME } from '@/lib/brand'
 
 const authClient = createAuthClient()
 
+const allowPublicSignup = process.env.NEXT_PUBLIC_ALLOW_PUBLIC_SIGNUP === 'true'
+
 export default function SignUpPage() {
     const router = useRouter()
     const { isAuthenticated, user } = useAuth()
@@ -145,7 +147,16 @@ export default function SignUpPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {step === 'register' ? (
+                        {!allowPublicSignup ? (
+                            <div className="space-y-4 text-center py-4">
+                                <p className="text-sm text-muted-foreground">
+                                    Public registration is disabled. Contact your workspace admin for an invite.
+                                </p>
+                                <Button asChild variant="outline" className="w-full">
+                                    <Link href="/auth/sign-in">Back to sign in</Link>
+                                </Button>
+                            </div>
+                        ) : step === 'register' ? (
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="name">Name</Label>
