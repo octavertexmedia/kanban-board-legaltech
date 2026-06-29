@@ -13,7 +13,6 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, AlertTriangle, UserMinus } from "lucide-react"
 import { toast } from "sonner"
-import { useAuth } from "@/lib/auth-context"
 
 interface ConfirmUserActionDialogProps {
     user: any | null
@@ -34,7 +33,10 @@ export function ConfirmUserActionDialog({
 }: ConfirmUserActionDialogProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [reassignTo, setReassignTo] = useState<string>("none")
-    const { isAuthenticated } = useAuth()
+
+    useEffect(() => {
+        if (open) setReassignTo("none")
+    }, [open, user?.id, action])
 
     if (!user || !action) return null
 

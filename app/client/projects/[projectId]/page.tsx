@@ -52,7 +52,7 @@ export default function ClientProjectPage() {
         : "bg-muted text-muted-foreground"
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col p-4 md:p-6">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-4 md:p-6">
       {loading ? (
         <div className="space-y-4">
           <Skeleton className="h-4 w-40" />
@@ -93,7 +93,7 @@ export default function ClientProjectPage() {
             </div>
           </div>
 
-          <div className="min-h-0 flex-1">
+          <div className="min-h-0 flex-1 overflow-hidden">
             <ProjectKanbanBoard projectId={project.id} readOnly />
           </div>
         </>

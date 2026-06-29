@@ -165,7 +165,7 @@ export async function PATCH(
     }
 }
 
-// DELETE /api/users/[id] — Only SUPER_ADMIN can delete users
+// DELETE /api/users/[id] — Admin+ can delete users (with role guards)
 export async function DELETE(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -181,8 +181,8 @@ export async function DELETE(
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
 
-        if (auth.role !== 'SUPER_ADMIN') {
-            return NextResponse.json({ error: 'Forbidden — only Super Admin can delete users' }, { status: 403 })
+        if (auth.role !== 'ADMIN' && auth.role !== 'SUPER_ADMIN') {
+            return NextResponse.json({ error: 'Forbidden — Admin access required to delete users' }, { status: 403 })
         }
 
         if (auth.userId === id) {
@@ -198,7 +198,27 @@ export async function DELETE(
             return NextResponse.json({ error: 'Cannot delete Super Admin accounts' }, { status: 403 })
         }
 
-        await prisma.user.delete({ where: { id } })
+        if (target.role === 'ADMIN' && auth.role !== 'SUPER_ADMIN') {
+            return NextResponse.json({ error: 'Forbidden — only Super Admin can delete Admin accounts' }, { status: 403 })
+        }
+
+        await prisma.$transaction(async (tx) => {
+            await tx.ticket.updateMany({ where: { assigneeId: id }, data: { assigneeId: null } })
+            await tx.ticket.updateMany({ where: { creatorId: id }, data: { creatorId: null } })
+            await tx.comment.deleteMany({ where: { userId: id } })
+            await tx.notification.deleteMany({ where: { userId: id } })
+            await tx.projectMember.deleteMany({ where: { userId: id } })
+            await tx.activityLog.deleteMany({ where: { userId: id } })
+            await tx.projectStatusUpdate.deleteMany({ where: { authorId: id } })
+            await tx.projectNote.deleteMany({ where: { authorId: id } })
+            await tx.knowledgeArticle.deleteMany({ where: { authorId: id } })
+            await tx.meeting.deleteMany({ where: { organizerId: id } })
+            await tx.user.update({
+                where: { id },
+                data: { attendingMeetings: { set: [] } },
+            })
+            await tx.user.delete({ where: { id } })
+        })
 
         await prisma.activityLog.create({
             data: {

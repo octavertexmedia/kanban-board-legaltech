@@ -127,7 +127,7 @@ export function UserManagement() {
     }
   }
 
-  const handleStatusAction = (targetUser: any) => {
+  const handleStatusAction = (targetUser: DBUser) => {
     if (!isAdmin && !isSuperAdmin) {
       toast.error("Only Admins can change user status")
       return
@@ -140,6 +140,22 @@ export function UserManagement() {
       user: targetUser,
       action: targetUser.status === 'ACTIVE' ? 'deactivate' : 'activate',
     })
+  }
+
+  const canManageUser = (targetUser: DBUser) => {
+    if (targetUser.id === currentUser?.id) return false
+    if (targetUser.role === 'SUPER_ADMIN') return false
+    if (isSuperAdmin) return true
+    if (isAdmin && targetUser.role !== 'ADMIN') return true
+    return false
+  }
+
+  const handleDeleteUser = (targetUser: DBUser) => {
+    if (!canManageUser(targetUser)) {
+      toast.error("You do not have permission to delete this user")
+      return
+    }
+    setConfirmAction({ user: targetUser, action: 'delete' })
   }
 
   return (
@@ -239,17 +255,25 @@ export function UserManagement() {
                       <DropdownMenuItem onClick={() => setViewUserModalData(user.id)}>
                         View profile
                       </DropdownMenuItem>
-                      {canCreateUsers && (isSuperAdmin || (isAdmin && user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN')) && (
+                      {canManageUser(user) && (
                         <>
-                          <DropdownMenuItem onClick={() => setRoleUserModalData(user)}>
-                            Change role
-                          </DropdownMenuItem>
+                          {canCreateUsers && (
+                            <DropdownMenuItem onClick={() => setRoleUserModalData(user)}>
+                              Change role
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className={user.status === 'ACTIVE' ? "text-destructive focus:text-destructive" : "text-green-600"}
                             onClick={() => handleStatusAction(user)}
                           >
                             {user.status === 'ACTIVE' ? 'Deactivate user' : 'Activate user'}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => handleDeleteUser(user)}
+                          >
+                            Delete user
                           </DropdownMenuItem>
                         </>
                       )}
