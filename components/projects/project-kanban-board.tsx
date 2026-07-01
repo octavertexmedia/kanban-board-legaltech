@@ -3,18 +3,40 @@
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Calendar, MessageSquare, Paperclip, RefreshCw, Loader2, Flag, Users, Filter } from "lucide-react"
+import {
+  Plus,
+  Calendar,
+  MessageSquare,
+  Paperclip,
+  RefreshCw,
+  Loader2,
+  Flag,
+  Users,
+  Search,
+  X,
+  Bug,
+  CheckSquare,
+  Sparkles,
+  BookOpen,
+  Scale,
+  UserPlus,
+  ChevronUp,
+  Minus,
+  ChevronDown,
+  LayoutGrid,
+} from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-context"
 import { CreateTicketDialog } from "@/components/kanban/create-ticket-dialog"
 import { TicketDetailsDialog } from "@/components/kanban/ticket-details-dialog"
 import { SprintManagerDialog, type DBSprint } from "@/components/projects/sprint-manager-dialog"
-import { stripMarkdown } from "@/lib/markdown-utils"
+import { ticketDisplayKey } from "@/lib/ticket-key"
+import { cn } from "@/lib/utils"
 
 interface DBUser {
   id: string
@@ -59,52 +81,71 @@ interface DBBoard {
 
 interface ProjectKanbanBoardProps {
   projectId: string
+  projectName?: string
   readOnly?: boolean
 }
 
 const COLUMN_ORDER = ["Backlog", "To Do", "In Progress", "Review", "QA Testing", "Done"]
+const COLUMN_WIDTH = 280
 
 const SPRINT_ALL = "__all__"
 const SPRINT_BACKLOG = "__backlog__"
 const ASSIGNEE_ALL = "__all__"
 const ASSIGNEE_UNASSIGNED = "__unassigned__"
 
-const columnColors: Record<string, { bg: string; border: string; badge: string }> = {
-  "To Do": { bg: "bg-slate-50 dark:bg-slate-900/50", border: "border-t-slate-400", badge: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300" },
-  Backlog: { bg: "bg-zinc-50 dark:bg-zinc-900/50", border: "border-t-zinc-500", badge: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300" },
-  "In Progress": { bg: "bg-blue-50/50 dark:bg-blue-950/20", border: "border-t-blue-500", badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
-  Review: { bg: "bg-amber-50/50 dark:bg-amber-950/20", border: "border-t-amber-500", badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" },
-  "QA Testing": { bg: "bg-pink-50/50 dark:bg-pink-950/20", border: "border-t-pink-500", badge: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300" },
-  Done: { bg: "bg-emerald-50/50 dark:bg-emerald-950/20", border: "border-t-emerald-500", badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" },
+const columnAccent: Record<string, string> = {
+  Backlog: "bg-zinc-400",
+  "To Do": "bg-slate-500",
+  "In Progress": "bg-blue-500",
+  Review: "bg-amber-500",
+  "QA Testing": "bg-violet-500",
+  Done: "bg-emerald-500",
 }
 
-function getPriorityColor(p: string) {
-  switch (p.toUpperCase()) {
-    case "HIGH": return "bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400"
-    case "URGENT": return "bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-400"
-    case "MEDIUM": return "bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
-    case "LOW": return "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400"
-    default: return "bg-gray-100 text-gray-700"
+function TypeIcon({ type, className }: { type: string; className?: string }) {
+  const t = type.toUpperCase()
+  const props = { className: cn("h-3.5 w-3.5 shrink-0", className) }
+  switch (t) {
+    case "BUG":
+      return <Bug {...props} className={cn(props.className, "text-red-500")} />
+    case "FEATURE":
+      return <Sparkles {...props} className={cn(props.className, "text-violet-500")} />
+    case "TASK":
+      return <CheckSquare {...props} className={cn(props.className, "text-blue-500")} />
+    case "RESEARCH":
+      return <BookOpen {...props} className={cn(props.className, "text-amber-600")} />
+    case "LEGAL_REVIEW":
+      return <Scale {...props} className={cn(props.className, "text-purple-600")} />
+    case "CLIENT_INTAKE":
+      return <UserPlus {...props} className={cn(props.className, "text-teal-600")} />
+    default:
+      return <CheckSquare {...props} className={cn(props.className, "text-muted-foreground")} />
   }
 }
 
-function getTypeColor(t: string) {
-  switch (t.toUpperCase()) {
-    case "BUG": return "bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400"
-    case "FEATURE": return "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400"
-    case "TASK": return "bg-violet-50 text-violet-600 dark:bg-violet-950/30 dark:text-violet-400"
-    case "RESEARCH": return "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400"
-    case "LEGAL_REVIEW": return "bg-purple-50 text-purple-600 dark:bg-purple-950/30 dark:text-purple-400"
-    case "CLIENT_INTAKE": return "bg-teal-50 text-teal-600 dark:bg-teal-950/30 dark:text-teal-400"
-    default: return "bg-gray-50 text-gray-600"
+function PriorityIcon({ priority }: { priority: string }) {
+  const p = priority.toUpperCase()
+  if (p === "URGENT" || p === "HIGH") {
+    return <ChevronUp className="h-3.5 w-3.5 text-red-500" aria-label={priority} />
   }
+  if (p === "LOW") {
+    return <ChevronDown className="h-3.5 w-3.5 text-blue-500" aria-label={priority} />
+  }
+  return <Minus className="h-3.5 w-3.5 text-amber-500" aria-label={priority} />
 }
 
 function ticketMatchesFilters(
   ticket: DBTicket,
   sprintFilter: string,
   assigneeFilter: string,
+  searchQuery: string,
 ): boolean {
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase()
+    const hay = `${ticket.title} ${ticket.description || ""} ${ticket.type}`.toLowerCase()
+    if (!hay.includes(q)) return false
+  }
+
   if (assigneeFilter === ASSIGNEE_UNASSIGNED) {
     if (ticket.assignee) return false
   } else if (assigneeFilter !== ASSIGNEE_ALL) {
@@ -121,7 +162,11 @@ function ticketMatchesFilters(
   return true
 }
 
-export function ProjectKanbanBoard({ projectId, readOnly = false }: ProjectKanbanBoardProps) {
+export function ProjectKanbanBoard({
+  projectId,
+  projectName = "Project",
+  readOnly = false,
+}: ProjectKanbanBoardProps) {
   const [board, setBoard] = useState<DBBoard | null>(null)
   const [sprints, setSprints] = useState<DBSprint[]>([])
   const [members, setMembers] = useState<DBUser[]>([])
@@ -132,7 +177,8 @@ export function ProjectKanbanBoard({ projectId, readOnly = false }: ProjectKanba
   const [selectedTicket, setSelectedTicket] = useState<DBTicket | null>(null)
   const [sprintFilter, setSprintFilter] = useState(SPRINT_ALL)
   const [assigneeFilter, setAssigneeFilter] = useState(ASSIGNEE_ALL)
-  const { isAuthenticated, isAdmin, isManager } = useAuth()
+  const [searchQuery, setSearchQuery] = useState("")
+  const { isAdmin, isManager } = useAuth()
   const canCreateTicket = !readOnly && (isAdmin || isManager)
   const canManageSprints = !readOnly && (isAdmin || isManager)
 
@@ -159,9 +205,7 @@ export function ProjectKanbanBoard({ projectId, readOnly = false }: ProjectKanba
 
       setBoard({ ...data.project.board, columns: sorted } as DBBoard)
       setSprints(data.project.sprints || [])
-      setMembers(
-        (data.project.members || []).map((m: { user: DBUser }) => m.user),
-      )
+      setMembers((data.project.members || []).map((m: { user: DBUser }) => m.user))
     } catch (err: unknown) {
       toast.error("Failed to load board", {
         description: err instanceof Error ? err.message : undefined,
@@ -191,14 +235,30 @@ export function ProjectKanbanBoard({ projectId, readOnly = false }: ProjectKanba
     if (!board) return []
     return board.columns.map((col) => ({
       ...col,
-      tickets: col.tickets.filter((t) => ticketMatchesFilters(t, sprintFilter, assigneeFilter)),
+      tickets: col.tickets.filter((t) =>
+        ticketMatchesFilters(t, sprintFilter, assigneeFilter, searchQuery),
+      ),
     }))
-  }, [board, sprintFilter, assigneeFilter])
+  }, [board, sprintFilter, assigneeFilter, searchQuery])
 
+  const totalVisible = filteredColumns.reduce((n, c) => n + c.tickets.length, 0)
   const activeSprint = sprints.find((s) => s.status === "ACTIVE")
-  const filtersActive = sprintFilter !== SPRINT_ALL || assigneeFilter !== ASSIGNEE_ALL
+  const filtersActive =
+    sprintFilter !== SPRINT_ALL ||
+    assigneeFilter !== ASSIGNEE_ALL ||
+    searchQuery.trim().length > 0
 
-  const handleDragEnd = async (result: { destination?: { droppableId: string; index: number } | null; source: { droppableId: string; index: number }; draggableId: string }) => {
+  const clearFilters = () => {
+    setSprintFilter(SPRINT_ALL)
+    setAssigneeFilter(ASSIGNEE_ALL)
+    setSearchQuery("")
+  }
+
+  const handleDragEnd = async (result: {
+    destination?: { droppableId: string; index: number } | null
+    source: { droppableId: string; index: number }
+    draggableId: string
+  }) => {
     if (readOnly || !canCreateTicket || filtersActive) return
     const { destination, source, draggableId } = result
     if (!destination || !board) return
@@ -208,9 +268,12 @@ export function ProjectKanbanBoard({ projectId, readOnly = false }: ProjectKanba
     const destCol = board.columns.find((c) => c.id === destination.droppableId)
     if (!sourceCol || !destCol) return
 
-    const ticket = sourceCol.tickets[source.index]
+    const ticketIndex = sourceCol.tickets.findIndex((t) => t.id === draggableId)
+    if (ticketIndex === -1) return
+    const ticket = sourceCol.tickets[ticketIndex]
+
     const newSourceTickets = [...sourceCol.tickets]
-    newSourceTickets.splice(source.index, 1)
+    newSourceTickets.splice(ticketIndex, 1)
     const newDestTickets =
       source.droppableId === destination.droppableId ? newSourceTickets : [...destCol.tickets]
     newDestTickets.splice(destination.index, 0, ticket)
@@ -239,9 +302,6 @@ export function ProjectKanbanBoard({ projectId, readOnly = false }: ProjectKanba
       if (!res.ok) {
         const d = await res.json()
         throw new Error(d.error)
-      }
-      if (source.droppableId !== destination.droppableId) {
-        toast.success(`Moved to ${destCol.title}`)
       }
     } catch (err: unknown) {
       toast.error("Failed to save move", {
@@ -279,11 +339,11 @@ export function ProjectKanbanBoard({ projectId, readOnly = false }: ProjectKanba
 
   if (isLoading) {
     return (
-      <div className="space-y-3">
-        <Skeleton className="h-8 w-full max-w-xl" />
-        <div className="flex gap-3 overflow-x-auto">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-[420px] w-[260px] shrink-0 rounded-lg" />
+      <div className="flex h-full min-h-0 flex-col rounded-lg border bg-[#F4F5F7] p-3 dark:bg-muted/20">
+        <Skeleton className="mb-3 h-9 w-full max-w-2xl" />
+        <div className="flex flex-1 gap-2 overflow-hidden">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-full w-[280px] shrink-0 rounded-md" />
           ))}
         </div>
       </div>
@@ -292,7 +352,7 @@ export function ProjectKanbanBoard({ projectId, readOnly = false }: ProjectKanba
 
   if (!board) {
     return (
-      <div className="flex items-center justify-center h-48">
+      <div className="flex h-48 items-center justify-center rounded-lg border bg-[#F4F5F7] dark:bg-muted/20">
         <div className="text-center">
           <p className="text-sm text-muted-foreground">No board found for this project.</p>
           <Button variant="outline" size="sm" onClick={fetchBoard} className="mt-3 h-8 text-xs">
@@ -304,103 +364,131 @@ export function ProjectKanbanBoard({ projectId, readOnly = false }: ProjectKanba
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      {/* Toolbar */}
-      <div className="flex flex-col gap-2 pb-3 shrink-0">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border/60 bg-[#F4F5F7] dark:bg-muted/20">
+      {/* Jira-style board toolbar */}
+      <div className="shrink-0 space-y-2 border-b border-border/50 bg-background/80 px-3 py-2 backdrop-blur-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold">Board</h2>
+            <div className="flex items-center gap-1.5 rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
+              <LayoutGrid className="h-3.5 w-3.5" />
+              Board
+            </div>
             {activeSprint ? (
-              <Badge variant="secondary" className="text-[10px] h-5">
+              <Badge variant="outline" className="h-6 text-[11px] font-normal">
                 {activeSprint.name}
               </Badge>
             ) : null}
+            <span className="text-[11px] text-muted-foreground">
+              {totalVisible} issue{totalVisible === 1 ? "" : "s"}
+            </span>
             {isSaving ? (
-              <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                 <Loader2 className="h-3 w-3 animate-spin" /> Saving
               </span>
             ) : null}
           </div>
           <div className="flex items-center gap-1.5">
-            <Button variant="ghost" size="icon" onClick={fetchBoard} className="h-7 w-7" title="Refresh">
+            <Button variant="ghost" size="icon" onClick={fetchBoard} className="h-8 w-8" title="Refresh">
               <RefreshCw className="h-3.5 w-3.5" />
             </Button>
             {canManageSprints ? (
-              <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setIsSprintOpen(true)}>
-                <Flag className="h-3 w-3 mr-1" />
+              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setIsSprintOpen(true)}>
+                <Flag className="mr-1.5 h-3.5 w-3.5" />
                 Sprints
               </Button>
             ) : null}
             {canCreateTicket ? (
-              <Button size="sm" className="h-7 text-[11px] px-2" onClick={() => setIsCreateOpen(true)}>
-                <Plus className="h-3 w-3 mr-1" />
-                Ticket
+              <Button size="sm" className="h-8 text-xs" onClick={() => setIsCreateOpen(true)}>
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                Create
               </Button>
             ) : null}
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Filter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <div className="relative min-w-[160px] flex-1 max-w-xs">
+            <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search board..."
+              className="h-8 border-border/60 bg-background pl-8 text-xs"
+            />
+          </div>
           <Select value={sprintFilter} onValueChange={setSprintFilter}>
-            <SelectTrigger className="h-7 w-[140px] text-[11px]">
+            <SelectTrigger className="h-8 w-[130px] border-border/60 bg-background text-xs">
               <SelectValue placeholder="Sprint" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={SPRINT_ALL} className="text-xs">
-                All sprints
-              </SelectItem>
-              <SelectItem value={SPRINT_BACKLOG} className="text-xs">
-                Backlog (no sprint)
-              </SelectItem>
+              <SelectItem value={SPRINT_ALL} className="text-xs">All sprints</SelectItem>
+              <SelectItem value={SPRINT_BACKLOG} className="text-xs">Backlog</SelectItem>
               {sprints.map((s) => (
                 <SelectItem key={s.id} value={s.id} className="text-xs">
-                  {s.name} ({s.status})
+                  {s.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-
           <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
-            <SelectTrigger className="h-7 w-[140px] text-[11px]">
-              <Users className="h-3 w-3 mr-1 shrink-0" />
+            <SelectTrigger className="h-8 w-[130px] border-border/60 bg-background text-xs">
+              <Users className="mr-1 h-3 w-3 shrink-0" />
               <SelectValue placeholder="Assignee" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ASSIGNEE_ALL} className="text-xs">
-                All assignees
-              </SelectItem>
-              <SelectItem value={ASSIGNEE_UNASSIGNED} className="text-xs">
-                Unassigned
-              </SelectItem>
+              <SelectItem value={ASSIGNEE_ALL} className="text-xs">All assignees</SelectItem>
+              <SelectItem value={ASSIGNEE_UNASSIGNED} className="text-xs">Unassigned</SelectItem>
               {members.map((m) => (
-                <SelectItem key={m.id} value={m.id} className="text-xs">
-                  {m.name}
-                </SelectItem>
+                <SelectItem key={m.id} value={m.id} className="text-xs">{m.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
           {filtersActive ? (
-            <span className="text-[10px] text-muted-foreground">Clear filters to drag tickets</span>
+            <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs text-muted-foreground" onClick={clearFilters}>
+              <X className="h-3 w-3" />
+              Clear filters
+            </Button>
+          ) : null}
+          {filtersActive ? (
+            <span className="text-[10px] text-muted-foreground">Drag disabled while filtering</span>
           ) : null}
         </div>
       </div>
 
-      {/* Board — horizontal scroll outer, vertical scroll per column */}
-      <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden pb-2">
+      {/* Board canvas */}
+      <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden p-3">
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="flex h-full min-h-0 gap-3 pr-2">
+          <div className="flex h-full min-h-0 gap-2" style={{ minWidth: filteredColumns.length * (COLUMN_WIDTH + 8) }}>
             {filteredColumns.map((column) => {
-              const colors = columnColors[column.title] || columnColors["To Do"]
+              const accent = columnAccent[column.title] || columnAccent["To Do"]
+              const overWip = column.wipLimit != null && column.tickets.length > column.wipLimit
+
               return (
-                <div key={column.id} className="flex h-full max-h-full w-[260px] shrink-0 flex-col">
-                  <div className={`rounded-t-lg px-2.5 py-2 border-t-[3px] ${colors.border} bg-card shrink-0`}>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[11px] font-semibold">{column.title}</span>
-                      <Badge variant="secondary" className={`text-[9px] font-medium h-4 px-1.5 ${colors.badge}`}>
+                <div
+                  key={column.id}
+                  className="flex h-full min-h-0 shrink-0 flex-col rounded-md bg-[#EBECF0]/90 dark:bg-muted/40"
+                  style={{ width: COLUMN_WIDTH }}
+                >
+                  {/* Sticky column header */}
+                  <div className="sticky top-0 z-10 shrink-0 px-2.5 pb-2 pt-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <span className={cn("h-2 w-2 shrink-0 rounded-full", accent)} />
+                        <span className="truncate text-[11px] font-semibold uppercase tracking-wide text-[#44546F] dark:text-foreground">
+                          {column.title}
+                        </span>
+                      </div>
+                      <span
+                        className={cn(
+                          "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium tabular-nums",
+                          overWip
+                            ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400"
+                            : "text-muted-foreground",
+                        )}
+                      >
                         {column.tickets.length}
-                        {column.wipLimit ? `/${column.wipLimit}` : ""}
-                      </Badge>
+                        {column.wipLimit ? ` / ${column.wipLimit}` : ""}
+                      </span>
                     </div>
                   </div>
 
@@ -409,9 +497,10 @@ export function ProjectKanbanBoard({ projectId, readOnly = false }: ProjectKanba
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`flex-1 min-h-0 overflow-y-auto overscroll-y-contain rounded-b-lg p-1.5 transition-colors ${
-                          snapshot.isDraggingOver ? "bg-primary/5 ring-1 ring-primary/20" : colors.bg
-                        }`}
+                        className={cn(
+                          "min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-y-contain px-2 pb-2",
+                          snapshot.isDraggingOver && "bg-primary/5",
+                        )}
                       >
                         {column.tickets.map((ticket, index) => (
                           <Draggable
@@ -426,89 +515,108 @@ export function ProjectKanbanBoard({ projectId, readOnly = false }: ProjectKanba
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
                                 onClick={() => setSelectedTicket(ticket)}
-                                className="mb-1.5"
+                                className={cn(
+                                  "group cursor-pointer rounded-md border border-border/70 bg-background shadow-sm transition-shadow",
+                                  snapshot.isDragging
+                                    ? "rotate-1 shadow-lg ring-2 ring-primary/30"
+                                    : "hover:shadow-md hover:border-border",
+                                )}
                               >
-                                <Card
-                                  className={`cursor-pointer border shadow-none transition-all ${
-                                    snapshot.isDragging ? "shadow-md rotate-1" : "hover:shadow-sm"
-                                  }`}
-                                >
-                                  <CardContent className="p-2">
-                                    <div className="space-y-1.5">
-                                      <div className="flex justify-between items-start gap-1">
-                                        <Badge
-                                          className={`${getTypeColor(ticket.type)} text-[9px] font-medium px-1 py-0 h-4`}
-                                          variant="secondary"
-                                        >
-                                          {ticket.type.replace("_", " ")}
-                                        </Badge>
-                                        <Badge
-                                          className={`${getPriorityColor(ticket.priority)} text-[8px] font-semibold px-1 py-0 h-4`}
-                                          variant="secondary"
-                                        >
-                                          {ticket.priority}
-                                        </Badge>
-                                      </div>
-                                      <h3 className="font-medium text-[11px] leading-snug line-clamp-2">
-                                        {ticket.title}
-                                      </h3>
-                                      {ticket.sprint?.name ? (
-                                        <Badge variant="outline" className="text-[8px] h-4 px-1 font-normal">
-                                          {ticket.sprint.name}
-                                        </Badge>
-                                      ) : null}
-                                      {ticket.description ? (
-                                        <p className="text-[10px] text-muted-foreground line-clamp-2 leading-tight">
-                                          {stripMarkdown(ticket.description)}
-                                        </p>
-                                      ) : null}
-                                      <div className="flex justify-between items-center pt-1 border-t border-dashed border-border/60">
-                                        <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
-                                          {ticket.dueDate ? (
-                                            <span className="flex items-center gap-0.5">
-                                              <Calendar className="h-2.5 w-2.5" />
-                                              {new Date(ticket.dueDate).toLocaleDateString("en-US", {
-                                                month: "short",
-                                                day: "numeric",
-                                              })}
-                                            </span>
-                                          ) : null}
-                                          {ticket._count.comments > 0 ? (
-                                            <span className="flex items-center gap-0.5">
-                                              <MessageSquare className="h-2.5 w-2.5" />
-                                              {ticket._count.comments}
-                                            </span>
-                                          ) : null}
-                                          {ticket._count.attachments > 0 ? (
-                                            <span className="flex items-center gap-0.5">
-                                              <Paperclip className="h-2.5 w-2.5" />
-                                              {ticket._count.attachments}
-                                            </span>
-                                          ) : null}
-                                        </div>
-                                        {ticket.assignee ? (
-                                          <Avatar className="h-5 w-5 ring-1 ring-background">
-                                            <AvatarImage src={ticket.assignee.avatar || undefined} alt={ticket.assignee.name} />
-                                            <AvatarFallback className="text-[8px]">
-                                              {ticket.assignee.name.charAt(0)}
-                                            </AvatarFallback>
-                                          </Avatar>
-                                        ) : (
-                                          <div className="h-5 w-5 rounded-full bg-muted border border-dashed border-muted-foreground/30" />
-                                        )}
-                                      </div>
+                                <div className="p-2.5">
+                                  <div className="mb-1.5 flex items-start justify-between gap-1">
+                                    <div className="flex min-w-0 items-center gap-1.5">
+                                      <TypeIcon type={ticket.type} />
+                                      <span className="truncate text-[10px] font-medium text-muted-foreground">
+                                        {ticketDisplayKey(projectName, ticket.id)}
+                                      </span>
                                     </div>
-                                  </CardContent>
-                                </Card>
+                                    <PriorityIcon priority={ticket.priority} />
+                                  </div>
+
+                                  <p className="mb-2 line-clamp-3 text-[13px] font-medium leading-snug text-foreground">
+                                    {ticket.title}
+                                  </p>
+
+                                  {ticket.labels.length > 0 ? (
+                                    <div className="mb-2 flex flex-wrap gap-1">
+                                      {ticket.labels.slice(0, 3).map(({ label }) => (
+                                        <span
+                                          key={label.id}
+                                          className="max-w-[80px] truncate rounded px-1.5 py-0.5 text-[9px] font-medium text-white"
+                                          style={{ backgroundColor: label.color }}
+                                          title={label.name}
+                                        >
+                                          {label.name}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  ) : null}
+
+                                  <div className="flex items-center justify-between gap-1">
+                                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                                      {ticket.dueDate ? (
+                                        <span
+                                          className={cn(
+                                            "flex items-center gap-0.5",
+                                            new Date(ticket.dueDate) < new Date() && "text-red-600",
+                                          )}
+                                        >
+                                          <Calendar className="h-3 w-3" />
+                                          {new Date(ticket.dueDate).toLocaleDateString("en-US", {
+                                            month: "short",
+                                            day: "numeric",
+                                          })}
+                                        </span>
+                                      ) : null}
+                                      {ticket._count.comments > 0 ? (
+                                        <span className="flex items-center gap-0.5">
+                                          <MessageSquare className="h-3 w-3" />
+                                          {ticket._count.comments}
+                                        </span>
+                                      ) : null}
+                                      {ticket._count.attachments > 0 ? (
+                                        <span className="flex items-center gap-0.5">
+                                          <Paperclip className="h-3 w-3" />
+                                          {ticket._count.attachments}
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                    {ticket.assignee ? (
+                                      <Avatar className="h-6 w-6" title={ticket.assignee.name}>
+                                        <AvatarImage src={ticket.assignee.avatar || undefined} alt={ticket.assignee.name} />
+                                        <AvatarFallback className="bg-[#DFE1E6] text-[9px] font-semibold text-[#44546F]">
+                                          {ticket.assignee.name.charAt(0)}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                    ) : (
+                                      <div
+                                        className="h-6 w-6 rounded-full border border-dashed border-muted-foreground/30 bg-muted/30"
+                                        title="Unassigned"
+                                      />
+                                    )}
+                                  </div>
+                                </div>
                               </div>
                             )}
                           </Draggable>
                         ))}
                         {provided.placeholder}
+
                         {column.tickets.length === 0 ? (
-                          <div className="flex items-center justify-center h-16">
-                            <p className="text-[10px] text-muted-foreground/60">Empty</p>
+                          <div className="flex h-20 items-center justify-center rounded-md border border-dashed border-border/50 bg-background/40">
+                            <p className="text-[10px] text-muted-foreground">No issues</p>
                           </div>
+                        ) : null}
+
+                        {canCreateTicket && column.title === "To Do" ? (
+                          <button
+                            type="button"
+                            onClick={() => setIsCreateOpen(true)}
+                            className="flex w-full items-center gap-1 rounded-md px-2 py-1.5 text-left text-[11px] text-muted-foreground transition-colors hover:bg-background/80 hover:text-foreground"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            Create issue
+                          </button>
                         ) : null}
                       </div>
                     )}

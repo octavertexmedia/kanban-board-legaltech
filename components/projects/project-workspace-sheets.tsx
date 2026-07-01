@@ -44,10 +44,10 @@ export function ProjectWorkspaceSheets({
     const [notesOpen, setNotesOpen] = useState(false)
 
     return (
-        <div className="mb-5 flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
             <Sheet open={teamOpen} onOpenChange={setTeamOpen}>
                 <SheetTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-1.5">
+                    <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
                         <Users className="h-4 w-4 shrink-0" />
                         Team
                         <span className="text-muted-foreground tabular-nums">
@@ -82,7 +82,7 @@ export function ProjectWorkspaceSheets({
 
             <Sheet open={updatesOpen} onOpenChange={setUpdatesOpen}>
                 <SheetTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-1.5">
+                    <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
                         <Megaphone className="h-4 w-4 shrink-0" />
                         Status updates
                     </Button>
@@ -111,7 +111,7 @@ export function ProjectWorkspaceSheets({
             {!isClientUser && (
                 <Sheet open={notesOpen} onOpenChange={setNotesOpen}>
                     <SheetTrigger asChild>
-                        <Button variant="outline" size="sm" className="gap-1.5">
+                        <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
                             <StickyNote className="h-4 w-4 shrink-0" />
                             Field notes
                         </Button>

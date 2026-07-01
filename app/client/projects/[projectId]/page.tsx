@@ -7,7 +7,7 @@ import { ProjectKanbanBoard } from "@/components/projects/project-kanban-board"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ArrowLeft, Calendar } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 import { toast } from "sonner"
 
 interface ClientProject {
@@ -61,40 +61,23 @@ export default function ClientProjectPage() {
         </div>
       ) : project ? (
         <>
-          <div className="mb-4 shrink-0 space-y-2">
+          <div className="mb-2 flex shrink-0 items-center gap-2 border-b border-border/50 pb-2">
             <Link
               href="/client"
-              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               My projects
             </Link>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold tracking-tight">{project.name}</h1>
-                  <Badge variant="secondary" className={`text-xs ${statusColor}`}>
-                    {project.status.charAt(0) + project.status.slice(1).toLowerCase()}
-                  </Badge>
-                </div>
-                {project.description ? (
-                  <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{project.description}</p>
-                ) : null}
-              </div>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Calendar className="h-3.5 w-3.5" />
-                Started{" "}
-                {new Date(project.createdAt).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-              </div>
-            </div>
+            <span className="text-muted-foreground/50">/</span>
+            <h1 className="truncate text-base font-semibold">{project.name}</h1>
+            <Badge variant="secondary" className={`h-5 text-[10px] ${statusColor}`}>
+              {project.status.charAt(0) + project.status.slice(1).toLowerCase()}
+            </Badge>
           </div>
 
           <div className="min-h-0 flex-1 overflow-hidden">
-            <ProjectKanbanBoard projectId={project.id} readOnly />
+            <ProjectKanbanBoard projectId={project.id} projectName={project.name} readOnly />
           </div>
         </>
       ) : (
